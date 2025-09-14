@@ -47,8 +47,12 @@ body {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   display: grid; place-items: center; color: white; font-size: 28px; box-shadow: var(--shadow);
 }
+.desktop-icon .icon svg { width: 28px; height: 28px; }
 .desktop-icon .label { color: var(--fg); font-size: 12px; line-height: 1.2; word-break: break-word; }
 .desktop-icon:focus-visible .icon, .desktop-icon:hover .icon { outline: 2px solid var(--accent-2); }
+
+/* Selection state */
+.desktop-icon.selected .icon { outline: 2px solid var(--accent); }
 
 .taskbar {
   position: fixed; left: 8px; right: 8px; bottom: 8px; height: 48px;
@@ -62,6 +66,7 @@ body {
 }
 .start-button:hover, .theme-toggle:hover { background: rgba(255,255,255,0.08); }
 .taskbar-apps { display: flex; gap: 6px; align-items: center; min-width: 0; overflow: hidden; }
+.taskbar-apps { justify-content: center; }
 .task-button {
   width: 36px; height: 36px; border-radius: 8px; padding: 0;
   border: 1px solid transparent; background: transparent; color: var(--fg);
@@ -69,6 +74,7 @@ body {
 }
 .task-button .label { display: none; }
 .task-button .icon { font-size: 18px; }
+.task-button .icon svg { width: 18px; height: 18px; }
 .task-button:hover { background: rgba(255,255,255,0.08); }
 .task-button.active::after {
   content: ""; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
@@ -96,6 +102,7 @@ body {
 }
 .titlebar .title { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .titlebar .title .icon { width: 18px; height: 18px; display: grid; place-items: center; }
+.titlebar .title .icon svg { width: 16px; height: 16px; }
 .titlebar .title .text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .titlebar .actions { display: flex; gap: 2px; margin-right: 2px; }
 .titlebar button.title-btn { width: 32px; height: 24px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: var(--fg); cursor: pointer; }
@@ -117,10 +124,25 @@ body {
 }
 .start-menu.hidden { display: none; }
 .start-header { padding: 10px 12px; border-bottom: 1px solid var(--window-border); font-weight: 600; color: var(--muted); }
+.start-search { padding: 10px; border-bottom: 1px solid var(--window-border); }
+.start-search input { width: 100%; height: 32px; border-radius: 8px; border: 1px solid var(--window-border); background: rgba(255,255,255,0.06); color: var(--fg); padding: 0 10px; }
+.start-section-title { padding: 8px 12px 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.start-pinned-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px; }
+.pinned-item { display: grid; justify-items: center; gap: 6px; cursor: pointer; padding: 8px; border-radius: 10px; }
+.pinned-item:hover { background: rgba(255,255,255,0.08); }
+.pinned-item .icon { width: 28px; height: 28px; display: grid; place-items: center; color: var(--fg); }
+.pinned-item .icon svg { width: 20px; height: 20px; }
+.pinned-item .label { font-size: 12px; text-align: center; color: var(--fg); }
 .start-menu-list { list-style: none; margin: 0; padding: 10px; display: grid; grid-template-columns: 1fr; gap: 8px; }
 .start-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; cursor: pointer; }
 .start-item:hover { background: rgba(127, 127, 127, 0.12); }
 .start-item .icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px; background: rgba(255,255,255,0.08); }
+.start-footer { display: flex; gap: 8px; padding: 8px 10px 10px; border-top: 1px solid var(--window-border); }
+.start-foot { flex: 1; height: 32px; border-radius: 8px; border: 1px solid var(--window-border); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; }
+.start-foot:hover { background: rgba(255,255,255,0.1); }
+
+/* Desktop selection rectangle */
+.selection-box { position: fixed; border: 1px solid var(--accent); background: rgba(0,120,212,0.15); pointer-events: none; z-index: 9998; }
 
 .prose h1, .prose h2, .prose h3 { margin: 0.2em 0 0.4em; }
 .prose p { margin: 0.3em 0 0.6em; color: var(--fg); }

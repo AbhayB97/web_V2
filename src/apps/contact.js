@@ -1,7 +1,9 @@
+import { iconMail } from '../icons.js';
+
 const ContactApp = {
   id: 'contact',
   title: 'Contact',
-  icon: '✉️',
+  icon: iconMail,
   render() {
     const el = document.createElement('div');
     el.className = 'prose';

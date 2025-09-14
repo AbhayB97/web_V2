@@ -1,7 +1,9 @@
+import { iconUser } from '../icons.js';
+
 const AboutApp = {
   id: 'about',
   title: 'About Abhay',
-  icon: '👤',
+  icon: iconUser,
   render() {
     const el = document.createElement('div');
     el.className = 'prose';

@@ -1,7 +1,9 @@
+import { iconDoc } from '../icons.js';
+
 const ResumeApp = {
   id: 'resume',
   title: 'Resume',
-  icon: '📄',
+  icon: iconDoc,
   render() {
     const el = document.createElement('div');
     el.className = 'content';
@@ -23,4 +25,3 @@ const ResumeApp = {
 };
 
 export default ResumeApp;
-

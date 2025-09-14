@@ -29,7 +29,16 @@
 
     <div id="start-menu" class="start-menu hidden" role="menu" aria-label="Start menu">
       <div class="start-header">Start</div>
+      <div class="start-search"><input id="start-search" placeholder="Type to search" aria-label="Search" /></div>
+      <div class="start-section-title">Pinned</div>
+      <div id="start-pinned" class="start-pinned-grid"></div>
+      <div class="start-section-title">All apps</div>
       <ul id="start-menu-list" class="start-menu-list"></ul>
+      <div class="start-footer">
+        <button class="start-foot" data-action="open-settings">Settings</button>
+        <button class="start-foot" data-action="open-about">About</button>
+        <button class="start-foot" data-action="power-reload">Reload</button>
+      </div>
     </div>
 
     <div id="context-menu" class="context-menu hidden" role="menu">

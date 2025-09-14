@@ -1,7 +1,9 @@
+import { iconBriefcase } from '../icons.js';
+
 const ProjectsApp = {
   id: 'projects',
   title: 'Projects',
-  icon: '💼',
+  icon: iconBriefcase,
   render() {
     const container = document.createElement('div');
     container.className = 'prose';

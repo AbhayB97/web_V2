@@ -10,10 +10,12 @@ const wallpapers = {
            radial-gradient(30vw 30vh at 90% 80%, rgba(10, 140, 60, 0.25) 0, transparent 70%)`,
 };
 
+import { iconGear } from '../icons.js';
+
 const SettingsApp = {
   id: 'settings',
   title: 'Settings',
-  icon: '⚙️',
+  icon: iconGear,
   render() {
     const el = document.createElement('div');
     el.className = 'prose';
@@ -65,4 +67,3 @@ const SettingsApp = {
 };
 
 export default SettingsApp;
-

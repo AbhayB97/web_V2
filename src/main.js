@@ -6,8 +6,9 @@ import ProjectsApp from './apps/projects.js';
 import ContactApp from './apps/contact.js';
 import SettingsApp from './apps/settings.js';
 import ResumeApp from './apps/resume.js';
+import ExplorerApp from './apps/explorer.js';
 
-const apps = [AboutApp, ProjectsApp, ContactApp, SettingsApp, ResumeApp];
+const apps = [AboutApp, ProjectsApp, ContactApp, SettingsApp, ResumeApp, ExplorerApp];
 
 class WindowManager {
   constructor({ desktopEl, taskbarAppsEl }) {
@@ -117,7 +118,16 @@ class WindowManager {
       el.style.left = x + 'px';
       el.style.top = y + 'px';
     });
-    window.addEventListener('mouseup', () => { drag = null; });
+    window.addEventListener('mouseup', (e) => {
+      if (drag) {
+        // Snap to top to maximize (near-clone behavior)
+        const topNow = parseInt(el.style.top || '0', 10);
+        if (topNow <= 8 && !el.classList.contains('maximized')) {
+          toggleMaximize();
+        }
+      }
+      drag = null;
+    });
 
     // Resize
     let res = null;
@@ -222,6 +232,8 @@ const taskbarApps = $('taskbar-apps');
 const startButton = $('start-button');
 const startMenu = $('start-menu');
 const startList = $('start-menu-list');
+const startPinned = $('start-pinned');
+const startSearch = $('start-search');
 const clock = $('clock');
 const themeToggle = $('theme-toggle');
 const contextMenu = $('context-menu');
@@ -264,21 +276,46 @@ setInterval(updateClock, 10000);
 // Window manager
 const wm = new WindowManager({ desktopEl: desktop, taskbarAppsEl: taskbarApps });
 
-// Start menu population (pin common apps first)
-const pinned = ['settings', 'resume', 'projects'];
+// Start menu population: pinned grid + all apps
+const pinned = ['explorer', 'projects', 'resume', 'about', 'contact', 'settings'];
 const order = [
   ...apps.filter((a) => pinned.includes(a.id)),
   ...apps.filter((a) => !pinned.includes(a.id)),
 ];
-order.forEach((app) => {
-  const li = document.createElement('li');
-  li.className = 'start-item';
-  li.innerHTML = `<span class="icon">${app.icon}</span><span>${app.title}</span>`;
-  li.addEventListener('click', () => {
+
+const createAppLauncher = (app, small = false) => {
+  if (small) {
+    const li = document.createElement('li');
+    li.className = 'start-item';
+    li.innerHTML = `<span class="icon">${app.icon}</span><span>${app.title}</span>`;
+    li.addEventListener('click', () => {
+      wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+      startMenu.classList.add('hidden');
+    });
+    return li;
+  }
+  const div = document.createElement('div');
+  div.className = 'pinned-item';
+  div.setAttribute('data-title', app.title.toLowerCase());
+  div.innerHTML = `<div class="icon">${app.icon}</div><div class="label">${app.title}</div>`;
+  div.addEventListener('click', () => {
     wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
     startMenu.classList.add('hidden');
   });
-  startList.append(li);
+  return div;
+};
+
+apps.forEach((app) => startList.append(createAppLauncher(app, true)));
+order.forEach((app) => startPinned.append(createAppLauncher(app, false)));
+
+// Start search filtering
+startSearch?.addEventListener('input', () => {
+  const q = startSearch.value.trim().toLowerCase();
+  const items = startPinned.querySelectorAll('.pinned-item');
+  items.forEach((el) => {
+    const t = el.getAttribute('data-title') || '';
+    el.style.display = t.includes(q) ? '' : 'none';
+  });
 });
 
 // Desktop icons
@@ -314,6 +351,26 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Start footer actions
+startMenu.addEventListener('click', (e) => {
+  const btn = e.target.closest('.start-foot');
+  if (!btn) return;
+  const action = btn.getAttribute('data-action');
+  if (!action) return;
+  switch (action) {
+    case 'open-settings':
+      wm.createWindow({ id: SettingsApp.id, title: SettingsApp.title, icon: SettingsApp.icon, content: SettingsApp.render });
+      break;
+    case 'open-about':
+      wm.createWindow({ id: AboutApp.id, title: AboutApp.title, icon: AboutApp.icon, content: AboutApp.render });
+      break;
+    case 'power-reload':
+      location.reload();
+      break;
+  }
+  startMenu.classList.add('hidden');
+});
+
 // Desktop context menu
 desktop.addEventListener('contextmenu', (e) => {
   e.preventDefault();
@@ -339,6 +396,12 @@ contextMenu.addEventListener('click', (e) => {
     case 'open-resume':
       wm.createWindow({ id: ResumeApp.id, title: ResumeApp.title, icon: ResumeApp.icon, content: ResumeApp.render });
       break;
+    case 'open-about':
+      wm.createWindow({ id: AboutApp.id, title: AboutApp.title, icon: AboutApp.icon, content: AboutApp.render });
+      break;
+    case 'power-reload':
+      location.reload();
+      break;
   }
 });
 
@@ -349,6 +412,55 @@ document.addEventListener('keydown', (e) => {
     if (!contextMenu.classList.contains('hidden')) contextMenu.classList.add('hidden');
   }
 });
+
+// Desktop selection rectangle + multi-select
+(() => {
+  let selecting = null;
+  const selectionBox = document.createElement('div');
+  selectionBox.className = 'selection-box';
+  const icons = () => Array.from(desktopIcons.querySelectorAll('.desktop-icon'));
+
+  desktop.addEventListener('mousedown', (e) => {
+    const isIcon = e.target.closest('.desktop-icon');
+    const isWindow = e.target.closest('.window');
+    const isTaskbar = e.target.closest('#taskbar');
+    if (e.button !== 0 || isIcon || isWindow || isTaskbar) return;
+    selecting = { x: e.clientX, y: e.clientY };
+    selectionBox.style.left = selecting.x + 'px';
+    selectionBox.style.top = selecting.y + 'px';
+    selectionBox.style.width = '0px';
+    selectionBox.style.height = '0px';
+    document.body.append(selectionBox);
+    icons().forEach((el) => el.classList.remove('selected'));
+  });
+
+  const rectOf = (x1, y1, x2, y2) => ({
+    left: Math.min(x1, x2),
+    top: Math.min(y1, y2),
+    right: Math.max(x1, x2),
+    bottom: Math.max(y1, y2),
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!selecting) return;
+    const r = rectOf(selecting.x, selecting.y, e.clientX, e.clientY);
+    selectionBox.style.left = r.left + 'px';
+    selectionBox.style.top = r.top + 'px';
+    selectionBox.style.width = r.right - r.left + 'px';
+    selectionBox.style.height = r.bottom - r.top + 'px';
+    icons().forEach((el) => {
+      const b = el.getBoundingClientRect();
+      const hit = !(b.right < r.left || b.left > r.right || b.bottom < r.top || b.top > r.bottom);
+      el.classList.toggle('selected', hit);
+    });
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!selecting) return;
+    selecting = null;
+    selectionBox.remove();
+  });
+})();
 
 // Open About on first load for a nice touch
 setTimeout(() => wm.createWindow({ id: AboutApp.id, title: AboutApp.title, icon: AboutApp.icon, content: AboutApp.render }), 300);
