@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portfolio OS</title>
+    <meta name="description" content="Desktop-style portfolio inspired by daedalOS" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23007acc'/%3E%3Cpath d='M7 16h18' stroke='white' stroke-width='3'/%3E%3Cpath d='M16 7v18' stroke='white' stroke-width='3'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="desktop" class="desktop" tabindex="0" aria-label="Desktop">
+      <div id="desktop-icons" class="desktop-icons" aria-label="Desktop icons"></div>
+    </div>
+
+    <div id="taskbar" class="taskbar" role="toolbar" aria-label="Taskbar">
+      <button id="start-button" class="start-button" aria-label="Open Start menu" title="Start">☰</button>
+      <div id="taskbar-apps" class="taskbar-apps" aria-label="Open apps"></div>
+      <div id="taskbar-right" class="taskbar-right">
+        <button id="theme-toggle" class="theme-toggle" title="Toggle theme" aria-label="Toggle theme">🌓</button>
+        <span id="clock" class="clock" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="start-menu" class="start-menu hidden" role="menu" aria-label="Start menu">
+      <div class="start-header">Start</div>
+      <ul id="start-menu-list" class="start-menu-list"></ul>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+  </html>
+
