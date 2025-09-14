@@ -65,14 +65,17 @@ class WindowManager {
     const actions = document.createElement('div');
     actions.className = 'actions';
     const minBtn = document.createElement('button');
+    minBtn.className = 'title-btn btn-min';
     minBtn.title = 'Minimize';
     minBtn.setAttribute('aria-label', 'Minimize');
     minBtn.textContent = '—';
     const maxBtn = document.createElement('button');
+    maxBtn.className = 'title-btn btn-max';
     maxBtn.title = 'Maximize';
     maxBtn.setAttribute('aria-label', 'Maximize');
     maxBtn.textContent = '▢';
     const closeBtn = document.createElement('button');
+    closeBtn.className = 'title-btn btn-close';
     closeBtn.title = 'Close';
     closeBtn.setAttribute('aria-label', 'Close');
     closeBtn.textContent = '×';
@@ -148,6 +151,7 @@ class WindowManager {
         el.style.height = 'calc(100vh - 68px)';
         maxBtn.title = 'Restore';
         maxBtn.setAttribute('aria-label', 'Restore');
+        resize.style.display = 'none';
       } else {
         el.classList.remove('maximized');
         if (prevRect) {
@@ -158,6 +162,7 @@ class WindowManager {
         }
         maxBtn.title = 'Maximize';
         maxBtn.setAttribute('aria-label', 'Maximize');
+        resize.style.display = '';
       }
     };
     maxBtn.addEventListener('click', toggleMaximize);
