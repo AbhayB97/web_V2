@@ -4,8 +4,10 @@
 import AboutApp from './apps/about.js';
 import ProjectsApp from './apps/projects.js';
 import ContactApp from './apps/contact.js';
+import SettingsApp from './apps/settings.js';
+import ResumeApp from './apps/resume.js';
 
-const apps = [AboutApp, ProjectsApp, ContactApp];
+const apps = [AboutApp, ProjectsApp, ContactApp, SettingsApp, ResumeApp];
 
 class WindowManager {
   constructor({ desktopEl, taskbarAppsEl }) {
@@ -66,11 +68,15 @@ class WindowManager {
     minBtn.title = 'Minimize';
     minBtn.setAttribute('aria-label', 'Minimize');
     minBtn.textContent = '—';
+    const maxBtn = document.createElement('button');
+    maxBtn.title = 'Maximize';
+    maxBtn.setAttribute('aria-label', 'Maximize');
+    maxBtn.textContent = '▢';
     const closeBtn = document.createElement('button');
     closeBtn.title = 'Close';
     closeBtn.setAttribute('aria-label', 'Close');
     closeBtn.textContent = '×';
-    actions.append(minBtn, closeBtn);
+    actions.append(minBtn, maxBtn, closeBtn);
 
     titlebar.append(titleBox, actions);
     el.append(titlebar);
@@ -97,6 +103,8 @@ class WindowManager {
       this.bringToFront(el);
       e.preventDefault();
     });
+    // Double-click to toggle maximize
+    titlebar.addEventListener('dblclick', () => toggleMaximize());
     window.addEventListener('mousemove', (e) => {
       if (!drag) return;
       const maxX = window.innerWidth - el.offsetWidth - 6;
@@ -127,7 +135,32 @@ class WindowManager {
     });
     window.addEventListener('mouseup', () => { res = null; });
 
-    // Minimize / Close
+    // Maximize / Minimize / Close
+    let prevRect = null;
+    const toggleMaximize = () => {
+      if (!el.classList.contains('maximized')) {
+        const rect = el.getBoundingClientRect();
+        prevRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        el.classList.add('maximized');
+        el.style.left = '8px';
+        el.style.top = '8px';
+        el.style.width = 'calc(100vw - 24px)';
+        el.style.height = 'calc(100vh - 68px)';
+        maxBtn.title = 'Restore';
+        maxBtn.setAttribute('aria-label', 'Restore');
+      } else {
+        el.classList.remove('maximized');
+        if (prevRect) {
+          el.style.left = prevRect.left + 'px';
+          el.style.top = prevRect.top + 'px';
+          el.style.width = prevRect.width + 'px';
+          el.style.height = prevRect.height + 'px';
+        }
+        maxBtn.title = 'Maximize';
+        maxBtn.setAttribute('aria-label', 'Maximize');
+      }
+    };
+    maxBtn.addEventListener('click', toggleMaximize);
     minBtn.addEventListener('click', () => {
       if (el.style.display !== 'none') {
         el.style.display = 'none';
@@ -186,15 +219,32 @@ const startMenu = $('start-menu');
 const startList = $('start-menu-list');
 const clock = $('clock');
 const themeToggle = $('theme-toggle');
+const contextMenu = $('context-menu');
 
 // Theme
 const applyTheme = (t) => document.documentElement.setAttribute('data-theme', t);
+const applyWallpaper = (css) => document.documentElement.style.setProperty('--wallpaper', css);
 const savedTheme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+const savedWallpaper = localStorage.getItem('wallpaper');
 applyTheme(savedTheme);
+if (savedWallpaper) applyWallpaper(savedWallpaper);
 themeToggle.addEventListener('click', () => {
   const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
   applyTheme(next);
   localStorage.setItem('theme', next);
+});
+// External setters from Settings app
+window.addEventListener('set-theme', (e) => {
+  const t = e.detail?.theme;
+  if (!t) return;
+  applyTheme(t);
+  localStorage.setItem('theme', t);
+});
+window.addEventListener('set-wallpaper', (e) => {
+  const css = e.detail?.css;
+  if (!css) return;
+  applyWallpaper(css);
+  localStorage.setItem('wallpaper', css);
 });
 
 // Clock
@@ -209,8 +259,13 @@ setInterval(updateClock, 10000);
 // Window manager
 const wm = new WindowManager({ desktopEl: desktop, taskbarAppsEl: taskbarApps });
 
-// Start menu population
-apps.forEach((app) => {
+// Start menu population (pin common apps first)
+const pinned = ['settings', 'resume', 'projects'];
+const order = [
+  ...apps.filter((a) => pinned.includes(a.id)),
+  ...apps.filter((a) => !pinned.includes(a.id)),
+];
+order.forEach((app) => {
   const li = document.createElement('li');
   li.className = 'start-item';
   li.innerHTML = `<span class="icon">${app.icon}</span><span>${app.title}</span>`;
@@ -248,6 +303,45 @@ document.addEventListener('click', (e) => {
   if (!startMenu.classList.contains('hidden')) {
     const within = startMenu.contains(e.target) || startButton.contains(e.target);
     if (!within) startMenu.classList.add('hidden');
+  }
+  if (!contextMenu.classList.contains('hidden')) {
+    if (!contextMenu.contains(e.target)) contextMenu.classList.add('hidden');
+  }
+});
+
+// Desktop context menu
+desktop.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const x = Math.min(e.clientX, window.innerWidth - 220);
+  const y = Math.min(e.clientY, window.innerHeight - 180);
+  contextMenu.style.left = x + 'px';
+  contextMenu.style.top = y + 'px';
+  contextMenu.classList.remove('hidden');
+});
+contextMenu.addEventListener('click', (e) => {
+  const item = e.target.closest('.item');
+  if (!item) return;
+  const action = item.getAttribute('data-action');
+  contextMenu.classList.add('hidden');
+  switch (action) {
+    case 'open-settings':
+    case 'change-wallpaper':
+      wm.createWindow({ id: SettingsApp.id, title: SettingsApp.title, icon: SettingsApp.icon, content: SettingsApp.render });
+      break;
+    case 'toggle-theme':
+      themeToggle.click();
+      break;
+    case 'open-resume':
+      wm.createWindow({ id: ResumeApp.id, title: ResumeApp.title, icon: ResumeApp.icon, content: ResumeApp.render });
+      break;
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!startMenu.classList.contains('hidden')) startMenu.classList.add('hidden');
+    if (!contextMenu.classList.contains('hidden')) contextMenu.classList.add('hidden');
   }
 });
 

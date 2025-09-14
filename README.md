@@ -17,10 +17,10 @@ Desktop‑style portfolio inspired by Dustin Brett’s [daedalOS]. Built as a st
 
 ## Roadmap (Phases)
 
-1) MVP UI and window manager (this PR)
-2) Content polish: real copy, project data, images/icons
-3) Apps: File Explorer, Resume viewer (PDF), Settings
-4) Theming: wallpapers, color schemes, persistence
+1) MVP UI and window manager (done)
+2) Content polish: real copy, project data (done)
+3) Apps: Resume viewer, Settings with wallpapers (done)
+4) Theming: wallpapers, color schemes, persistence (done)
 5) Performance: lazy app loading, preloading assets
 6) Accessibility: keyboard interactions, focus traps, reduced motion
 7) Integrations: contact form via serverless function, analytics
@@ -36,4 +36,3 @@ Desktop‑style portfolio inspired by Dustin Brett’s [daedalOS]. Built as a st
 This project is for your personal portfolio; it intentionally avoids copying code/assets from daedalOS and instead implements an original, inspired design.
 
 [daedalOS]: https://github.com/DustinBrett/daedalOS
-

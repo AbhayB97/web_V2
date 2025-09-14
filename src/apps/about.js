@@ -22,7 +22,7 @@ const AboutApp = {
         <a href="https://github.com/AbhayB97/The-Missing-Link" target="_blank" rel="noreferrer">Read on GitHub</a>
       </p>
 
-      <p>Explore my <a href="#" data-open="projects">Projects</a> or <a href="#" data-open="contact">Contact</a> apps to learn more.</p>
+      <p>Explore my <a href="#" data-open="projects">Projects</a>, view my <a href="#" data-open="resume">Resume</a>, or <a href="#" data-open="contact">Contact</a> me.</p>
     `;
     // In-app router hooks
     el.addEventListener('click', (e) => {

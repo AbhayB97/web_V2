@@ -27,9 +27,9 @@ html, body { height: 100%; }
 body {
   margin: 0;
   color: var(--fg);
-  background: radial-gradient(60vw 60vh at 80% -10%, #223 0, transparent 70%),
+  background: var(--wallpaper, radial-gradient(60vw 60vh at 80% -10%, #223 0, transparent 70%),
               radial-gradient(40vw 40vh at -10% 80%, #142 0, transparent 60%),
-              var(--bg);
+              var(--bg));
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   overflow: hidden;
 }
@@ -74,6 +74,11 @@ body {
   background: var(--window); border: 1px solid var(--window-border); border-radius: 12px; box-shadow: var(--shadow);
   overflow: hidden; display: grid; grid-template-rows: 36px 1fr; z-index: 10;
 }
+.window.maximized {
+  left: 8px !important; top: 8px !important;
+  width: calc(100vw - 24px) !important; height: calc(100vh - 68px) !important;
+  border-radius: 10px;
+}
 .titlebar {
   display: flex; align-items: center; gap: 8px; padding: 0 8px; background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
   border-bottom: 1px solid var(--window-border); cursor: move; user-select: none;
@@ -87,6 +92,12 @@ body {
 .content { padding: 12px; overflow: auto; }
 .resize-handle { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; cursor: se-resize; opacity: 0.6; }
 .resize-handle::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 8px; height: 8px; border-right: 2px solid var(--window-border); border-bottom: 2px solid var(--window-border); }
+
+/* Context menu */
+.context-menu { position: fixed; min-width: 200px; background: var(--window); color: var(--fg); border: 1px solid var(--window-border); border-radius: 8px; box-shadow: var(--shadow); z-index: 9999; }
+.context-menu.hidden { display: none; }
+.context-menu .item { padding: 8px 10px; cursor: pointer; }
+.context-menu .item:hover { background: rgba(127,127,127,0.1); }
 
 .start-menu {
   position: fixed; left: 8px; bottom: 60px; width: 300px; max-height: 60vh; overflow: auto;
@@ -115,4 +126,3 @@ body {
   .desktop-icon { width: 72px; }
   .desktop-icon .icon { width: 52px; height: 52px; font-size: 22px; }
 }
-
