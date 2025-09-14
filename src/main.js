@@ -57,7 +57,11 @@ class WindowManager {
     titleBox.className = 'title';
     const iconEl = document.createElement('div');
     iconEl.className = 'icon';
-    iconEl.textContent = icon || '🗔';
+    if (icon && typeof icon === 'string' && icon.trim().startsWith('<svg')) {
+      iconEl.innerHTML = icon;
+    } else {
+      iconEl.textContent = icon || '🗔';
+    }
     const textEl = document.createElement('div');
     textEl.className = 'text';
     textEl.textContent = title;
