@@ -1,20 +1,28 @@
 const AboutApp = {
   id: 'about',
-  title: 'About Me',
+  title: 'About Abhay',
   icon: '👤',
   render() {
     const el = document.createElement('div');
     el.className = 'prose';
     el.innerHTML = `
-      <h1>Hi, I’m <span style="color: var(--accent)">Your Name</span> 👋</h1>
-      <p>Full‑stack developer focused on building delightful, pragmatic products. This portfolio takes inspiration from Dustin Brett’s daedalOS — a desktop‑style interface to discover my work.</p>
-      <h3>What I enjoy</h3>
+      <h1>Hi, I’m <span style="color: var(--accent)">Abhay Bhingradia</span> 👋</h1>
+      <p>Welcome to my desktop‑style portfolio. I’m a Cybersecurity professional currently working as a SOC Analyst in Mississauga. I enjoy building things on the web and tinkering with open‑source.</p>
+
+      <h3>Highlights</h3>
       <ul>
-        <li>TypeScript, Node.js, React/Next.js</li>
-        <li>Design systems and DX tooling</li>
-        <li>Shipping fast with quality and empathy</li>
+        <li>Graduated Sheridan College (2024), Bachelors in Cyber Security</li>
+        <li>Student Director, Sheridan Student Union</li>
+        <li>Peer Mentor supporting studies and campus life</li>
       </ul>
-      <p>Open the <a href="#" data-open="projects">Projects</a> app to explore case studies, or the <a href="#" data-open="contact">Contact</a> app to reach out.</p>
+
+      <h3>Recent Writing</h3>
+      <p>
+        “Missing Link: Why government should consolidate cybersecurity and privacy regulations” —
+        <a href="https://github.com/AbhayB97/The-Missing-Link" target="_blank" rel="noreferrer">Read on GitHub</a>
+      </p>
+
+      <p>Explore my <a href="#" data-open="projects">Projects</a> or <a href="#" data-open="contact">Contact</a> apps to learn more.</p>
     `;
     // In-app router hooks
     el.addEventListener('click', (e) => {
@@ -30,4 +38,3 @@ const AboutApp = {
 };
 
 export default AboutApp;
-
