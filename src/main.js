@@ -4,6 +4,7 @@
 import WindowManager from './windowManager.js';
 import { iconUser, iconBriefcase, iconMail, iconGear, iconDoc, iconFolder } from './icons.js';
 import { createProcessStore } from './store.js';
+import { initTheme } from './theme.js';
 
 // Application metadata with lazy loaders for improved performance
 const apps = [
@@ -29,29 +30,7 @@ const themeToggle = $('theme-toggle');
 const contextMenu = $('context-menu');
 
 // Theme
-const applyTheme = (t) => document.documentElement.setAttribute('data-theme', t);
-const applyWallpaper = (css) => document.documentElement.style.setProperty('--wallpaper', css);
-const savedTheme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-const savedWallpaper = localStorage.getItem('wallpaper');
-applyTheme(savedTheme);
-if (savedWallpaper) applyWallpaper(savedWallpaper);
-themeToggle.addEventListener('click', () => {
-  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-  applyTheme(next);
-  localStorage.setItem('theme', next);
-});
-window.addEventListener('set-theme', (e) => {
-  const t = e.detail?.theme;
-  if (!t) return;
-  applyTheme(t);
-  localStorage.setItem('theme', t);
-});
-window.addEventListener('set-wallpaper', (e) => {
-  const css = e.detail?.css;
-  if (!css) return;
-  applyWallpaper(css);
-  localStorage.setItem('wallpaper', css);
-});
+initTheme({ themeToggle });
 
 // Clock
 const updateClock = () => {

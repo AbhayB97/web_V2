@@ -12,12 +12,17 @@ export default class WindowManager {
     this.z += 1;
     el.style.zIndex = String(this.z);
     el.classList.add('active');
+
+    // Deactivate others
     for (const { el: other } of this.windows.values()) {
       if (other !== el) other.classList.remove('active');
     }
+
+    // Update task buttons
     for (const { el: w, taskButton } of this.windows.values()) {
       taskButton.classList.toggle('active', w === el);
     }
+
     for (const [id, { el: w }] of this.windows.entries()) {
       if (w === el) this.onChange?.(id, { lastFocus: Date.now() });
     }
@@ -25,6 +30,7 @@ export default class WindowManager {
 
   createWindow({ id, title, icon, content }) {
     if (this.windows.has(id)) {
+      // Restore existing window
       const w = this.windows.get(id);
       w.el.style.display = 'grid';
       w.taskButton.classList.add('active');
@@ -114,20 +120,22 @@ export default class WindowManager {
       e.preventDefault();
     });
 
+    // Double-click to toggle maximize
     titlebar.addEventListener('dblclick', () => toggleMaximize());
 
     window.addEventListener('mousemove', (e) => {
       if (!drag) return;
       const maxX = window.innerWidth - el.offsetWidth - 6;
-      const maxY = window.innerHeight - el.offsetHeight - 56;
-      let x = Math.min(Math.max(6, e.clientX - drag.dx), maxX);
-      let y = Math.min(Math.max(6, e.clientY - drag.dy), maxY);
+      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar height
+      let x = Math.min(Math.max(6, e.clientX - drag.dx), Math.max(6, maxX));
+      let y = Math.min(Math.max(6, e.clientY - drag.dy), Math.max(6, maxY));
       el.style.left = x + 'px';
       el.style.top = y + 'px';
     });
 
-    window.addEventListener('mouseup', (e) => {
+    window.addEventListener('mouseup', () => {
       if (drag) {
+        // Snap to top to maximize
         const topNow = parseInt(el.style.top || '0', 10);
         if (topNow <= 8 && !el.classList.contains('maximized')) {
           toggleMaximize();
