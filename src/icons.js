@@ -13,3 +13,12 @@ export const iconFolder = base('<path d="M3 7h6l2 2h10a2 2 0 0 1 2 2v7a2 2 0 0 1
 export const iconMonitor = base('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/>');
 export const iconPaper = base('<path d="M8 4h7l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M15 4v4h4"/><path d="M10 12h8M10 16h8"/>');
 
+export const iconNote = base(
+  '<path d="M7 3h10a2 2 0 0 1 2 2v11l-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 16v4"/><path d="M9 9h6M9 13h4"/>'
+);
+export const iconPlus = base('<path d="M12 5v14"/><path d="M5 12h14"/>');
+export const iconTrash = base(
+  '<path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/>'
+);
+export const iconArrowRight = base('<path d="m12 5 7 7-7 7"/><path d="M5 12h14"/>');
+

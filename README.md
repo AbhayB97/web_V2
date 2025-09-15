@@ -15,6 +15,13 @@ Desktop‑style portfolio inspired by Dustin Brett’s [daedalOS]. Built as a st
 - `src/apps/*.js` — individual app modules (About, Projects, Contact)
 - `vercel.json` — static config and basic security headers
 
+## Filesystem & productivity apps
+
+- IndexedDB-backed filesystem in `src/fs.js` powers the File Explorer and Notes apps
+- File Explorer (`src/apps/explorer.js`) supports navigation, drag-and-drop, and desktop integration
+- Notes (`src/apps/notes.js`) loads `.txt/.md` files, auto-saves changes, and lists saved notes
+- Desktop icons combine pinned apps with files stored in the `/Desktop` directory of the filesystem
+
 ## Roadmap (Phases)
 
 1) MVP UI and window manager (done)
