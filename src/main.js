@@ -3,6 +3,7 @@
 
 import WindowManager from './windowManager.js';
 import { iconUser, iconBriefcase, iconMail, iconGear, iconDoc, iconFolder } from './icons.js';
+import { createProcessStore } from './store.js';
 
 // Application metadata with lazy loaders for improved performance
 const apps = [
@@ -39,7 +40,6 @@ themeToggle.addEventListener('click', () => {
   applyTheme(next);
   localStorage.setItem('theme', next);
 });
-// External setters from Settings app
 window.addEventListener('set-theme', (e) => {
   const t = e.detail?.theme;
   if (!t) return;
@@ -63,15 +63,36 @@ updateClock();
 setInterval(updateClock, 10000);
 
 // Window manager
-const wm = new WindowManager({ desktopEl: desktop, taskbarAppsEl: taskbarApps });
+const procStore = createProcessStore();
+const wm = new WindowManager({
+  desktopEl: desktop,
+  taskbarAppsEl: taskbarApps,
+  onChange: (id, data) => procStore.update(id, data),
+  onClose: (id) => procStore.close(id),
+});
 
 // Helper to load and open an app on demand
 const loadApp = async (meta) => (await meta.loader()).default;
-async function openApp(idOrMeta) {
+async function openApp(idOrMeta, restoring = false) {
   const meta = typeof idOrMeta === 'string' ? apps.find((a) => a.id === idOrMeta) : idOrMeta;
   if (!meta) return;
   const app = await loadApp(meta);
-  wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+  const el = wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+  if (!restoring) {
+    const rect = el.getBoundingClientRect();
+    procStore.launch({
+      id: app.id,
+      title: app.title,
+      icon: app.icon,
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      minimized: false,
+      maximized: false,
+    });
+  }
+  return el;
 }
 
 // Start menu population: pinned grid + all apps
@@ -260,8 +281,27 @@ document.addEventListener('keydown', (e) => {
   });
 })();
 
-// Open About on first load for a nice touch
-setTimeout(() => openApp('about'), 300);
+// Restore previous session or show About on first visit
+const savedProcs = procStore.getAll();
+if (savedProcs.length) {
+  savedProcs.forEach((p) => {
+    openApp(p.id, true).then((el) => {
+      el.style.left = p.left + 'px';
+      el.style.top = p.top + 'px';
+      el.style.width = p.width + 'px';
+      el.style.height = p.height + 'px';
+      if (p.maximized) {
+        const maxBtn = el.querySelector('.btn-max');
+        maxBtn && maxBtn.click();
+      }
+      if (p.minimized) {
+        el.style.display = 'none';
+      }
+    });
+  });
+} else {
+  setTimeout(() => openApp('about'), 300);
+}
 
 // Cross-app open events (e.g., links from About -> Projects)
 window.addEventListener('open-app', (e) => {
