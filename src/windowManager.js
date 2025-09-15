@@ -12,14 +12,17 @@ export default class WindowManager {
     this.z += 1;
     el.style.zIndex = String(this.z);
     el.classList.add('active');
+
     // Deactivate others
     for (const { el: other } of this.windows.values()) {
       if (other !== el) other.classList.remove('active');
     }
+
     // Update task buttons
     for (const { el: w, taskButton } of this.windows.values()) {
       taskButton.classList.toggle('active', w === el);
     }
+
     for (const [id, { el: w }] of this.windows.entries()) {
       if (w === el) this.onChange?.(id, { lastFocus: Date.now() });
     }
@@ -116,20 +119,23 @@ export default class WindowManager {
       this.bringToFront(el);
       e.preventDefault();
     });
+
     // Double-click to toggle maximize
     titlebar.addEventListener('dblclick', () => toggleMaximize());
+
     window.addEventListener('mousemove', (e) => {
       if (!drag) return;
       const maxX = window.innerWidth - el.offsetWidth - 6;
-      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar area
+      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar height
       let x = Math.min(Math.max(6, e.clientX - drag.dx), Math.max(6, maxX));
       let y = Math.min(Math.max(6, e.clientY - drag.dy), Math.max(6, maxY));
       el.style.left = x + 'px';
       el.style.top = y + 'px';
     });
-    window.addEventListener('mouseup', (e) => {
+
+    window.addEventListener('mouseup', () => {
       if (drag) {
-        // Snap to top to maximize (near-clone behavior)
+        // Snap to top to maximize
         const topNow = parseInt(el.style.top || '0', 10);
         if (topNow <= 8 && !el.classList.contains('maximized')) {
           toggleMaximize();
@@ -148,6 +154,7 @@ export default class WindowManager {
       this.bringToFront(el);
       e.preventDefault();
     });
+
     window.addEventListener('mousemove', (e) => {
       if (!res) return;
       const minW = 280, minH = 200;
@@ -156,6 +163,7 @@ export default class WindowManager {
       el.style.width = w + 'px';
       el.style.height = h + 'px';
     });
+
     window.addEventListener('mouseup', () => {
       if (res) emitState();
       res = null;
@@ -189,6 +197,7 @@ export default class WindowManager {
       }
       emitState();
     };
+
     maxBtn.addEventListener('click', toggleMaximize);
     minBtn.addEventListener('click', () => {
       if (el.style.display !== 'none') {
@@ -201,6 +210,7 @@ export default class WindowManager {
       }
       emitState();
     });
+
     closeBtn.addEventListener('click', () => this.closeWindow(id));
 
     // Focus on mousedown
@@ -227,9 +237,9 @@ export default class WindowManager {
 
     this.taskbarAppsEl.append(taskButton);
     this.desktopEl.append(el);
-
     this.windows.set(id, { el, taskButton });
     emitState();
+
     return el;
   }
 
