@@ -40,7 +40,6 @@ themeToggle.addEventListener('click', () => {
   applyTheme(next);
   localStorage.setItem('theme', next);
 });
-// External setters from Settings app
 window.addEventListener('set-theme', (e) => {
   const t = e.detail?.theme;
   if (!t) return;
