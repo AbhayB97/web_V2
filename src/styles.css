@@ -49,6 +49,14 @@ body {
 }
 .desktop-icon .icon svg { width: 28px; height: 28px; }
 .desktop-icon .label { color: var(--fg); font-size: 12px; line-height: 1.2; word-break: break-word; }
+.desktop-icon.file-icon { align-items: flex-start; }
+.desktop-icon.file-icon .icon {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.desktop-icon.file-icon .icon svg { width: 24px; height: 24px; }
+.desktop-icon.file-icon .label { text-align: left; }
 .desktop-icon:focus-visible .icon, .desktop-icon:hover .icon { outline: 2px solid var(--accent-2); }
 
 /* Selection state */
@@ -117,6 +125,12 @@ body {
 .context-menu.hidden { display: none; }
 .context-menu .item { padding: 8px 10px; cursor: pointer; }
 .context-menu .item:hover { background: rgba(127,127,127,0.1); }
+.context-menu .separator { height: 1px; background: var(--window-border); margin: 4px 0; }
+.context-menu .has-sub { position: relative; display: flex; justify-content: space-between; align-items: center; }
+.context-menu .has-sub::after { content: '›'; font-size: 12px; color: var(--muted); }
+.context-menu .submenu { position: absolute; left: 100%; top: 0; margin-left: 6px; background: var(--window); border: 1px solid var(--window-border); border-radius: 8px; box-shadow: var(--shadow); min-width: 180px; display: none; padding: 4px 0; }
+.context-menu .submenu .item { padding: 6px 12px; }
+.context-menu .has-sub:hover .submenu, .context-menu .has-sub:focus-within .submenu { display: block; }
 
 .start-menu {
   position: fixed; left: 8px; bottom: 60px; width: 300px; max-height: 60vh; overflow: auto;
@@ -154,9 +168,55 @@ body {
 .card h3 { margin: 0 0 6px; font-size: 16px; }
 .card p { margin: 0; color: var(--muted); font-size: 13px; }
 
+.content > .explorer-app,
+.content > .notes-app { height: 100%; }
+
+.explorer-app { display: grid; grid-template-rows: auto 1fr auto; gap: 12px; height: 100%; }
+.explorer-toolbar { display: flex; flex-direction: column; gap: 8px; }
+.explorer-location { display: flex; align-items: center; }
+.explorer-breadcrumb { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.breadcrumb-item { border-radius: 8px; border: 1px solid transparent; padding: 4px 10px; font-size: 12px; background: rgba(255,255,255,0.05); color: var(--fg); cursor: pointer; }
+.breadcrumb-item:disabled { opacity: 0.6; cursor: default; }
+.breadcrumb-item:not(:disabled):hover { border-color: var(--accent); }
+.breadcrumb-sep { color: var(--muted); font-size: 12px; }
+.explorer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.explorer-button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--window-border); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; font-size: 12px; }
+.explorer-button .icon { width: 18px; height: 18px; display: grid; place-items: center; }
+.explorer-button:hover { background: rgba(255,255,255,0.1); }
+.explorer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; overflow: auto; padding-right: 4px; }
+.explorer-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; border: 1px solid var(--window-border); background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); color: var(--fg); cursor: pointer; text-align: left; }
+.explorer-item .icon { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; background: rgba(255,255,255,0.08); color: var(--fg); }
+.explorer-item .label { font-size: 13px; word-break: break-word; }
+.explorer-item:hover { border-color: var(--accent); }
+.explorer-item.selected { outline: 2px solid var(--accent); }
+.explorer-info { font-size: 12px; color: var(--muted); }
+
+.notes-app { display: grid; grid-template-columns: 220px 1fr; gap: 12px; height: 100%; }
+.notes-sidebar { border: 1px solid var(--window-border); border-radius: 12px; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); display: flex; flex-direction: column; min-width: 0; }
+.notes-sidebar-header { padding: 10px; border-bottom: 1px solid var(--window-border); }
+.notes-list { flex: 1; overflow: auto; display: flex; flex-direction: column; }
+.notes-item { padding: 10px 12px; border: none; background: transparent; color: var(--fg); text-align: left; cursor: pointer; font-size: 13px; }
+.notes-item:hover { background: rgba(255,255,255,0.08); }
+.notes-item.active { background: rgba(0, 120, 212, 0.2); color: var(--accent); }
+.notes-button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--window-border); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; font-size: 12px; }
+.notes-button.primary { background: var(--accent); border-color: transparent; color: #fff; }
+.notes-button:disabled { opacity: 0.6; cursor: default; }
+.notes-editor { border: 1px solid var(--window-border); border-radius: 12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent); display: flex; flex-direction: column; min-width: 0; }
+.notes-editor-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--window-border); }
+.notes-editor-actions { display: flex; gap: 8px; }
+.notes-title { font-weight: 600; color: var(--fg); font-size: 14px; }
+.notes-textarea { flex: 1; border: none; background: transparent; color: var(--fg); font-family: inherit; font-size: 14px; line-height: 1.5; padding: 12px; resize: none; }
+.notes-textarea:disabled { opacity: 0.6; }
+.notes-empty { padding: 24px; text-align: center; color: var(--muted); display: grid; justify-items: center; gap: 8px; }
+.notes-empty .icon svg { width: 28px; height: 28px; }
+
 @media (max-width: 640px) {
   .window { width: calc(100vw - 24px); height: calc(100vh - 100px); left: 12px !important; top: 12px !important; }
   .desktop-icons { grid-template-columns: repeat(auto-fill, 72px); }
   .desktop-icon { width: 72px; }
   .desktop-icon .icon { width: 52px; height: 52px; font-size: 22px; }
+  .notes-app { grid-template-columns: 1fr; }
+  .notes-sidebar { order: 2; }
+  .notes-editor { order: 1; }
+  .explorer-actions { flex-direction: column; align-items: flex-start; }
 }

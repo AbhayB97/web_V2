@@ -126,7 +126,7 @@ export default class WindowManager {
     window.addEventListener('mousemove', (e) => {
       if (!drag) return;
       const maxX = window.innerWidth - el.offsetWidth - 6;
-      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar height
+      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar area
       let x = Math.min(Math.max(6, e.clientX - drag.dx), Math.max(6, maxX));
       let y = Math.min(Math.max(6, e.clientY - drag.dy), Math.max(6, maxY));
       el.style.left = x + 'px';
@@ -135,7 +135,7 @@ export default class WindowManager {
 
     window.addEventListener('mouseup', () => {
       if (drag) {
-        // Snap to top to maximize
+        // Snap to top to maximize (near-clone behavior)
         const topNow = parseInt(el.style.top || '0', 10);
         if (topNow <= 8 && !el.classList.contains('maximized')) {
           toggleMaximize();
@@ -237,6 +237,7 @@ export default class WindowManager {
 
     this.taskbarAppsEl.append(taskButton);
     this.desktopEl.append(el);
+
     this.windows.set(id, { el, taskButton });
     emitState();
 

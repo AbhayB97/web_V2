@@ -2,9 +2,18 @@
 // Minimal window manager + basic apps
 
 import WindowManager from './windowManager.js';
-import { iconUser, iconBriefcase, iconMail, iconGear, iconDoc, iconFolder } from './icons.js';
+import { iconUser, iconBriefcase, iconMail, iconGear, iconDoc, iconFolder, iconNote } from './icons.js';
 import { createProcessStore } from './store.js';
 import { initTheme } from './theme.js';
+import {
+  initFileSystem,
+  listDir as fsListDir,
+  writeFile as fsWriteFile,
+  moveFile as fsMoveFile,
+  restoreDefaults as fsRestoreDefaults,
+  stat as fsStat,
+  DesktopDir,
+} from './fs.js';
 
 // Application metadata with lazy loaders for improved performance
 const apps = [
@@ -13,6 +22,7 @@ const apps = [
   { id: 'contact', title: 'Contact', icon: iconMail, loader: () => import('./apps/contact.js') },
   { id: 'settings', title: 'Settings', icon: iconGear, loader: () => import('./apps/settings.js') },
   { id: 'resume', title: 'Resume', icon: iconDoc, loader: () => import('./apps/resume.js') },
+  { id: 'notes', title: 'Notes', icon: iconNote, loader: () => import('./apps/notes.js') },
   { id: 'explorer', title: 'File Explorer', icon: iconFolder, loader: () => import('./apps/explorer.js') },
 ];
 
@@ -31,6 +41,7 @@ const contextMenu = $('context-menu');
 
 // Theme
 initTheme({ themeToggle });
+const fsReady = initFileSystem();
 
 // Clock
 const updateClock = () => {
@@ -74,8 +85,31 @@ async function openApp(idOrMeta, restoring = false) {
   return el;
 }
 
+async function openFile(path) {
+  if (!path) return;
+  await fsReady;
+  const entry = await fsStat(path);
+  if (!entry) return;
+  if (entry.type === 'folder') {
+    await openApp('explorer');
+    window.dispatchEvent(new CustomEvent('explorer-navigate', { detail: { path: entry.path } }));
+    return;
+  }
+  const meta = entry.meta || {};
+  if (meta.openWith === 'app' && meta.appId) {
+    await openApp(meta.appId);
+    return;
+  }
+  if (meta.openWith === 'url' && meta.href) {
+    window.open(meta.href, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  await openApp('notes');
+  window.dispatchEvent(new CustomEvent('open-file', { detail: { path: entry.path } }));
+}
+
 // Start menu population: pinned grid + all apps
-const pinned = ['explorer', 'projects', 'resume', 'about', 'contact', 'settings'];
+const pinned = ['explorer', 'notes', 'projects', 'resume', 'about', 'contact', 'settings'];
 const order = [
   ...apps.filter((a) => pinned.includes(a.id)),
   ...apps.filter((a) => !pinned.includes(a.id)),
@@ -118,22 +152,114 @@ startSearch?.addEventListener('input', () => {
 
 // Desktop icons
 const desktopIcons = $('desktop-icons');
-apps.forEach((app) => {
-  const tile = document.createElement('button');
-  tile.className = 'desktop-icon';
-  tile.innerHTML = `<div class="icon">${app.icon}</div><div class="label">${app.title}</div>`;
-  tile.addEventListener('dblclick', () => {
-    openApp(app);
-  });
-  tile.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
+const desktopState = { entries: [] };
+const isFsDrag = (event) => event.dataTransfer?.types?.includes('application/x-fs-path');
+const notify = (message) => {
+  if (typeof alert === 'function') alert(message);
+  else console.error(message); // eslint-disable-line no-console
+};
+
+const getEntryIcon = (entry) => {
+  if (entry.type === 'folder') return iconFolder;
+  if (entry.meta?.openWith === 'notes') return iconNote;
+  return iconDoc;
+};
+
+const renderDesktopIcons = () => {
+  desktopIcons.innerHTML = '';
+  // App tiles
+  apps.forEach((app) => {
+    const tile = document.createElement('button');
+    tile.className = 'desktop-icon app-icon';
+    tile.innerHTML = `<div class="icon">${app.icon}</div><div class="label">${app.title}</div>`;
+    tile.addEventListener('dblclick', () => {
       openApp(app);
-    }
+    });
+    tile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openApp(app);
+      }
+    });
+    tile.setAttribute('aria-label', `${app.title} desktop icon`);
+    tile.tabIndex = 0;
+    desktopIcons.append(tile);
   });
-  tile.setAttribute('aria-label', `${app.title} desktop icon`);
-  tile.tabIndex = 0;
-  desktopIcons.append(tile);
+
+  // File/Folder tiles
+  desktopState.entries.forEach((entry) => {
+    const tile = document.createElement('button');
+    tile.className = 'desktop-icon file-icon';
+    tile.dataset.path = entry.path;
+    tile.innerHTML = `<div class="icon">${getEntryIcon(entry)}</div><div class="label">${entry.name}</div>`;
+    tile.draggable = entry.type === 'file';
+    tile.setAttribute('aria-label', `${entry.name} file icon`);
+    tile.tabIndex = 0;
+    tile.addEventListener('dblclick', () => {
+      openFile(entry.path);
+    });
+    tile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openFile(entry.path);
+      }
+    });
+    tile.addEventListener('dragstart', (event) => {
+      if (!event.dataTransfer) return;
+      event.dataTransfer.setData('application/x-fs-path', entry.path);
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    desktopIcons.append(tile);
+  });
+};
+
+const refreshDesktopFiles = async () => {
+  await fsReady;
+  const { entries } = await fsListDir(DesktopDir);
+  desktopState.entries = entries;
+  renderDesktopIcons();
+};
+
+const createDesktopEntry = async (type) => {
+  await fsReady;
+  const { entries } = await fsListDir(DesktopDir);
+  const existing = new Set(entries.map((entry) => entry.name.toLowerCase()));
+  const defaultName = type === 'folder' ? 'New Folder' : 'New Note.txt';
+  const label = type === 'folder' ? 'Folder name' : 'File name';
+  const input = typeof prompt === 'function' ? prompt(label, defaultName) : defaultName;
+  if (input === null) return;
+  let name = (input || '').trim() || defaultName;
+  if (type === 'file' && !/\.[^./\s]{2,}$/i.test(name)) {
+    name += '.txt';
+  }
+  const splitIndex = type === 'file' ? name.lastIndexOf('.') : -1;
+  const base = splitIndex > 0 ? name.slice(0, splitIndex) : name;
+  const ext = splitIndex > 0 ? name.slice(splitIndex) : '';
+  let candidate = name;
+  let index = 1;
+  while (existing.has(candidate.toLowerCase())) {
+    candidate = `${base} (${index++})${ext}`;
+  }
+  const path = `${DesktopDir}/${candidate}`;
+  try {
+    if (type === 'folder') {
+      await fsWriteFile(path, { type: 'folder', overwrite: false });
+    } else {
+      await fsWriteFile(path, { content: '', meta: { openWith: 'notes' }, overwrite: false });
+    }
+  } catch (err) {
+    notify(err.message || 'Unable to create item');
+  }
+};
+
+renderDesktopIcons();
+refreshDesktopFiles();
+
+window.addEventListener('fs-changed', (event) => {
+  const parent = event.detail?.parent;
+  if (!parent || parent === DesktopDir || parent.startsWith(`${DesktopDir}/`)) {
+    refreshDesktopFiles();
+  }
 });
 
 // Start menu toggle
@@ -169,7 +295,27 @@ startMenu.addEventListener('click', (e) => {
   startMenu.classList.add('hidden');
 });
 
-// Desktop context menu
+// Desktop context menu + drag-drop
+desktop.addEventListener('dragover', (event) => {
+  if (isFsDrag(event)) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+});
+
+desktop.addEventListener('drop', async (event) => {
+  if (!isFsDrag(event)) return;
+  event.preventDefault();
+  const from = event.dataTransfer?.getData('application/x-fs-path');
+  if (!from) return;
+  await fsReady;
+  try {
+    await fsMoveFile(from, DesktopDir);
+  } catch (err) {
+    notify(err.message || 'Unable to move file');
+  }
+});
+
 desktop.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   const x = Math.min(e.clientX, window.innerWidth - 220);
@@ -184,9 +330,23 @@ contextMenu.addEventListener('click', (e) => {
   const action = item.getAttribute('data-action');
   contextMenu.classList.add('hidden');
   switch (action) {
+    case 'new-file':
+      createDesktopEntry('file');
+      break;
+    case 'new-folder':
+      createDesktopEntry('folder');
+      break;
+    case 'restore-defaults':
+      fsRestoreDefaults()
+        .then(() => refreshDesktopFiles())
+        .catch((err) => notify(err.message || 'Unable to restore files'));
+      break;
     case 'open-settings':
     case 'change-wallpaper':
       openApp('settings');
+      break;
+    case 'open-explorer':
+      openApp('explorer');
       break;
     case 'toggle-theme':
       themeToggle.click();
@@ -286,6 +446,11 @@ if (savedProcs.length) {
 window.addEventListener('open-app', (e) => {
   const { id } = e.detail || {};
   openApp(id);
+});
+
+window.addEventListener('fs-open', (e) => {
+  const path = e.detail?.path;
+  if (path) openFile(path);
 });
 
 // Preload app modules when the browser is idle
