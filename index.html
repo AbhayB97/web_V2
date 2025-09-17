@@ -42,10 +42,22 @@
     </div>
 
     <div id="context-menu" class="context-menu hidden" role="menu">
+      <div class="item has-sub" data-menu="new">
+        <span>New</span>
+        <div class="submenu" role="menu">
+          <div class="item" data-action="new-file">Text Document</div>
+          <div class="item" data-action="new-folder">Folder</div>
+        </div>
+      </div>
+      <div class="item" data-action="open-explorer">Open File Explorer</div>
+      <div class="separator"></div>
       <div class="item" data-action="open-settings">Open Settings</div>
       <div class="item" data-action="toggle-theme">Toggle Theme</div>
       <div class="item" data-action="change-wallpaper">Change Wallpaper…</div>
+      <div class="item" data-action="restore-defaults">Restore Default Files</div>
       <div class="item" data-action="open-resume">Open Resume</div>
+      <div class="item" data-action="open-about">Open About</div>
+      <div class="item" data-action="power-reload">Reload</div>
     </div>
 
     <script type="module" src="./src/main.js"></script>

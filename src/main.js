@@ -1,233 +1,44 @@
 // Desktop-style portfolio (Phase 1 scaffold)
 // Minimal window manager + basic apps
 
-import AboutApp from './apps/about.js';
-import ProjectsApp from './apps/projects.js';
-import ContactApp from './apps/contact.js';
-import SettingsApp from './apps/settings.js';
-import ResumeApp from './apps/resume.js';
-import ExplorerApp from './apps/explorer.js';
+import WindowManager from './windowManager.js';
+import {
+  iconUser,
+  iconBriefcase,
+  iconMail,
+  iconGear,
+  iconDoc,
+  iconFolder,
+  iconNote,
+  iconChart,
+  iconTerminal,
+  iconPalette,
+} from './icons.js';
+import { createProcessStore } from './store.js';
+import { initTheme } from './theme.js';
+import {
+  initFileSystem,
+  listDir as fsListDir,
+  writeFile as fsWriteFile,
+  moveFile as fsMoveFile,
+  restoreDefaults as fsRestoreDefaults,
+  stat as fsStat,
+  DesktopDir,
+} from './fs.js';
 
-const apps = [AboutApp, ProjectsApp, ContactApp, SettingsApp, ResumeApp, ExplorerApp];
-
-class WindowManager {
-  constructor({ desktopEl, taskbarAppsEl }) {
-    this.desktopEl = desktopEl;
-    this.taskbarAppsEl = taskbarAppsEl;
-    this.z = 10;
-    this.windows = new Map(); // id -> { el, taskButton }
-  }
-
-  bringToFront(el) {
-    this.z += 1;
-    el.style.zIndex = String(this.z);
-    el.classList.add('active');
-    // Deactivate others
-    for (const { el: other } of this.windows.values()) {
-      if (other !== el) other.classList.remove('active');
-    }
-    // Update task buttons
-    for (const { el: w, taskButton } of this.windows.values()) {
-      taskButton.classList.toggle('active', w === el);
-    }
-  }
-
-  createWindow({ id, title, icon, content }) {
-    if (this.windows.has(id)) {
-      // Restore existing window
-      const w = this.windows.get(id);
-      w.el.style.display = 'grid';
-      w.taskButton.classList.add('active');
-      this.bringToFront(w.el);
-      return w.el;
-    }
-
-    const el = document.createElement('div');
-    el.className = 'window';
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-label', title);
-    el.style.left = Math.round(60 + Math.random() * 120) + 'px';
-    el.style.top = Math.round(60 + Math.random() * 80) + 'px';
-    el.style.zIndex = String(++this.z);
-
-    // Titlebar
-    const titlebar = document.createElement('div');
-    titlebar.className = 'titlebar';
-    const titleBox = document.createElement('div');
-    titleBox.className = 'title';
-    const iconEl = document.createElement('div');
-    iconEl.className = 'icon';
-    if (icon && typeof icon === 'string' && icon.trim().startsWith('<svg')) {
-      iconEl.innerHTML = icon;
-    } else {
-      iconEl.textContent = icon || '🗔';
-    }
-    const textEl = document.createElement('div');
-    textEl.className = 'text';
-    textEl.textContent = title;
-    titleBox.append(iconEl, textEl);
-
-    const actions = document.createElement('div');
-    actions.className = 'actions';
-    const minBtn = document.createElement('button');
-    minBtn.className = 'title-btn btn-min';
-    minBtn.title = 'Minimize';
-    minBtn.setAttribute('aria-label', 'Minimize');
-    minBtn.textContent = '—';
-    const maxBtn = document.createElement('button');
-    maxBtn.className = 'title-btn btn-max';
-    maxBtn.title = 'Maximize';
-    maxBtn.setAttribute('aria-label', 'Maximize');
-    maxBtn.textContent = '▢';
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'title-btn btn-close';
-    closeBtn.title = 'Close';
-    closeBtn.setAttribute('aria-label', 'Close');
-    closeBtn.textContent = '×';
-    actions.append(minBtn, maxBtn, closeBtn);
-
-    titlebar.append(titleBox, actions);
-    el.append(titlebar);
-
-    // Content
-    const contentEl = document.createElement('div');
-    contentEl.className = 'content';
-    if (typeof content === 'function') contentEl.append(content());
-    else if (content instanceof Node) contentEl.append(content);
-    else if (typeof content === 'string') contentEl.innerHTML = content;
-    el.append(contentEl);
-
-    // Resize handle
-    const resize = document.createElement('div');
-    resize.className = 'resize-handle';
-    el.append(resize);
-
-    // Dragging
-    let drag = null;
-    titlebar.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      const rect = el.getBoundingClientRect();
-      drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
-      this.bringToFront(el);
-      e.preventDefault();
-    });
-    // Double-click to toggle maximize
-    titlebar.addEventListener('dblclick', () => toggleMaximize());
-    window.addEventListener('mousemove', (e) => {
-      if (!drag) return;
-      const maxX = window.innerWidth - el.offsetWidth - 6;
-      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar area
-      let x = Math.min(Math.max(6, e.clientX - drag.dx), Math.max(6, maxX));
-      let y = Math.min(Math.max(6, e.clientY - drag.dy), Math.max(6, maxY));
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-    });
-    window.addEventListener('mouseup', (e) => {
-      if (drag) {
-        // Snap to top to maximize (near-clone behavior)
-        const topNow = parseInt(el.style.top || '0', 10);
-        if (topNow <= 8 && !el.classList.contains('maximized')) {
-          toggleMaximize();
-        }
-      }
-      drag = null;
-    });
-
-    // Resize
-    let res = null;
-    resize.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      const rect = el.getBoundingClientRect();
-      res = { w: rect.width, h: rect.height, x: e.clientX, y: e.clientY };
-      this.bringToFront(el);
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-      if (!res) return;
-      const minW = 280, minH = 200;
-      const w = Math.max(minW, res.w + (e.clientX - res.x));
-      const h = Math.max(minH, res.h + (e.clientY - res.y));
-      el.style.width = w + 'px';
-      el.style.height = h + 'px';
-    });
-    window.addEventListener('mouseup', () => { res = null; });
-
-    // Maximize / Minimize / Close
-    let prevRect = null;
-    const toggleMaximize = () => {
-      if (!el.classList.contains('maximized')) {
-        const rect = el.getBoundingClientRect();
-        prevRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-        el.classList.add('maximized');
-        el.style.left = '8px';
-        el.style.top = '8px';
-        el.style.width = 'calc(100vw - 24px)';
-        el.style.height = 'calc(100vh - 68px)';
-        maxBtn.title = 'Restore';
-        maxBtn.setAttribute('aria-label', 'Restore');
-        resize.style.display = 'none';
-      } else {
-        el.classList.remove('maximized');
-        if (prevRect) {
-          el.style.left = prevRect.left + 'px';
-          el.style.top = prevRect.top + 'px';
-          el.style.width = prevRect.width + 'px';
-          el.style.height = prevRect.height + 'px';
-        }
-        maxBtn.title = 'Maximize';
-        maxBtn.setAttribute('aria-label', 'Maximize');
-        resize.style.display = '';
-      }
-    };
-    maxBtn.addEventListener('click', toggleMaximize);
-    minBtn.addEventListener('click', () => {
-      if (el.style.display !== 'none') {
-        el.style.display = 'none';
-        taskButton.classList.remove('active');
-      } else {
-        el.style.display = 'grid';
-        this.bringToFront(el);
-        taskButton.classList.add('active');
-      }
-    });
-    closeBtn.addEventListener('click', () => this.closeWindow(id));
-
-    // Focus on mousedown
-    el.addEventListener('mousedown', () => this.bringToFront(el));
-
-    // Taskbar button
-    const taskButton = document.createElement('button');
-    taskButton.className = 'task-button active';
-    taskButton.innerHTML = `<span class="icon">${icon || '🗔'}</span><span class="label">${title}</span>`;
-    taskButton.addEventListener('click', () => {
-      if (el.style.display === 'none') {
-        el.style.display = 'grid';
-        this.bringToFront(el);
-        taskButton.classList.add('active');
-      } else if (parseInt(el.style.zIndex || '0', 10) < this.z) {
-        this.bringToFront(el);
-        taskButton.classList.add('active');
-      } else {
-        el.style.display = 'none';
-        taskButton.classList.remove('active');
-      }
-    });
-
-    this.taskbarAppsEl.append(taskButton);
-    this.desktopEl.append(el);
-
-    this.windows.set(id, { el, taskButton });
-    return el;
-  }
-
-  closeWindow(id) {
-    const w = this.windows.get(id);
-    if (!w) return;
-    w.el.remove();
-    w.taskButton.remove();
-    this.windows.delete(id);
-  }
-}
+// Application metadata with lazy loaders for improved performance
+const apps = [
+  { id: 'about', title: 'About Abhay', icon: iconUser, loader: () => import('./apps/about.js') },
+  { id: 'projects', title: 'Projects Hub', icon: iconBriefcase, loader: () => import('./apps/projects.js') },
+  { id: 'contact', title: 'Contact', icon: iconMail, loader: () => import('./apps/contact.js') },
+  { id: 'settings', title: 'Settings', icon: iconGear, loader: () => import('./apps/settings.js') },
+  { id: 'resume', title: 'Resume', icon: iconDoc, loader: () => import('./apps/resume.js') },
+  { id: 'notes', title: 'Notes', icon: iconNote, loader: () => import('./apps/notes.js') },
+  { id: 'explorer', title: 'File Explorer', icon: iconFolder, loader: () => import('./apps/explorer.js') },
+  { id: 'edr-viewer', title: 'EDR Viewer', icon: iconChart, loader: () => import('./apps/edrViewer.js') },
+  { id: 'terminal', title: 'Security Terminal', icon: iconTerminal, loader: () => import('./apps/terminal.js') },
+  { id: 'wallpapers', title: 'Wallpapers', icon: iconPalette, loader: () => import('./apps/wallpapers.js') },
+];
 
 // Bootstrapping
 const $ = (id) => document.getElementById(id);
@@ -243,30 +54,8 @@ const themeToggle = $('theme-toggle');
 const contextMenu = $('context-menu');
 
 // Theme
-const applyTheme = (t) => document.documentElement.setAttribute('data-theme', t);
-const applyWallpaper = (css) => document.documentElement.style.setProperty('--wallpaper', css);
-const savedTheme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-const savedWallpaper = localStorage.getItem('wallpaper');
-applyTheme(savedTheme);
-if (savedWallpaper) applyWallpaper(savedWallpaper);
-themeToggle.addEventListener('click', () => {
-  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-  applyTheme(next);
-  localStorage.setItem('theme', next);
-});
-// External setters from Settings app
-window.addEventListener('set-theme', (e) => {
-  const t = e.detail?.theme;
-  if (!t) return;
-  applyTheme(t);
-  localStorage.setItem('theme', t);
-});
-window.addEventListener('set-wallpaper', (e) => {
-  const css = e.detail?.css;
-  if (!css) return;
-  applyWallpaper(css);
-  localStorage.setItem('wallpaper', css);
-});
+initTheme({ themeToggle });
+const fsReady = initFileSystem();
 
 // Clock
 const updateClock = () => {
@@ -278,10 +67,72 @@ updateClock();
 setInterval(updateClock, 10000);
 
 // Window manager
-const wm = new WindowManager({ desktopEl: desktop, taskbarAppsEl: taskbarApps });
+const procStore = createProcessStore();
+const wm = new WindowManager({
+  desktopEl: desktop,
+  taskbarAppsEl: taskbarApps,
+  onChange: (id, data) => procStore.update(id, data),
+  onClose: (id) => procStore.close(id),
+});
+
+// Helper to load and open an app on demand
+const loadApp = async (meta) => (await meta.loader()).default;
+async function openApp(idOrMeta, restoring = false) {
+  const meta = typeof idOrMeta === 'string' ? apps.find((a) => a.id === idOrMeta) : idOrMeta;
+  if (!meta) return;
+  const app = await loadApp(meta);
+  const el = wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+  if (!restoring) {
+    const rect = el.getBoundingClientRect();
+    procStore.launch({
+      id: app.id,
+      title: app.title,
+      icon: app.icon,
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      minimized: false,
+      maximized: false,
+    });
+  }
+  return el;
+}
+
+async function openFile(path) {
+  if (!path) return;
+  await fsReady;
+  const entry = await fsStat(path);
+  if (!entry) return;
+  if (entry.type === 'folder') {
+    await openApp('explorer');
+    window.dispatchEvent(new CustomEvent('explorer-navigate', { detail: { path: entry.path } }));
+    return;
+  }
+  const meta = entry.meta || {};
+  if (meta.openWith === 'app' && meta.appId) {
+    await openApp(meta.appId);
+    return;
+  }
+  if (meta.openWith === 'url' && meta.href) {
+    window.open(meta.href, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  await openApp('notes');
+  window.dispatchEvent(new CustomEvent('open-file', { detail: { path: entry.path } }));
+}
 
 // Start menu population: pinned grid + all apps
-const pinned = ['explorer', 'projects', 'resume', 'about', 'contact', 'settings'];
+const pinned = [
+  'projects',
+  'edr-viewer',
+  'terminal',
+  'explorer',
+  'notes',
+  'resume',
+  'wallpapers',
+  'settings',
+];
 const order = [
   ...apps.filter((a) => pinned.includes(a.id)),
   ...apps.filter((a) => !pinned.includes(a.id)),
@@ -293,7 +144,7 @@ const createAppLauncher = (app, small = false) => {
     li.className = 'start-item';
     li.innerHTML = `<span class="icon">${app.icon}</span><span>${app.title}</span>`;
     li.addEventListener('click', () => {
-      wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+      openApp(app);
       startMenu.classList.add('hidden');
     });
     return li;
@@ -303,7 +154,7 @@ const createAppLauncher = (app, small = false) => {
   div.setAttribute('data-title', app.title.toLowerCase());
   div.innerHTML = `<div class="icon">${app.icon}</div><div class="label">${app.title}</div>`;
   div.addEventListener('click', () => {
-    wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+    openApp(app);
     startMenu.classList.add('hidden');
   });
   return div;
@@ -324,22 +175,112 @@ startSearch?.addEventListener('input', () => {
 
 // Desktop icons
 const desktopIcons = $('desktop-icons');
-apps.forEach((app) => {
-  const tile = document.createElement('button');
-  tile.className = 'desktop-icon';
-  tile.innerHTML = `<div class="icon">${app.icon}</div><div class="label">${app.title}</div>`;
-  tile.addEventListener('dblclick', () => {
-    wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+const desktopState = { entries: [] };
+const isFsDrag = (event) => event.dataTransfer?.types?.includes('application/x-fs-path');
+const notify = (message) => {
+  if (typeof alert === 'function') alert(message);
+  else console.error(message); // eslint-disable-line no-console
+};
+
+const getEntryIcon = (entry) => {
+  if (entry.type === 'folder') return iconFolder;
+  if (entry.meta?.openWith === 'notes') return iconNote;
+  return iconDoc;
+};
+
+const renderDesktopIcons = () => {
+  desktopIcons.innerHTML = '';
+  apps.forEach((app) => {
+    const tile = document.createElement('button');
+    tile.className = 'desktop-icon app-icon';
+    tile.innerHTML = `<div class="icon">${app.icon}</div><div class="label">${app.title}</div>`;
+    tile.addEventListener('dblclick', () => {
+      openApp(app);
+    });
+    tile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openApp(app);
+      }
+    });
+    tile.setAttribute('aria-label', `${app.title} desktop icon`);
+    tile.tabIndex = 0;
+    desktopIcons.append(tile);
   });
-  tile.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+
+  desktopState.entries.forEach((entry) => {
+    const tile = document.createElement('button');
+    tile.className = 'desktop-icon file-icon';
+    tile.dataset.path = entry.path;
+    tile.innerHTML = `<div class="icon">${getEntryIcon(entry)}</div><div class="label">${entry.name}</div>`;
+    tile.draggable = entry.type === 'file';
+    tile.setAttribute('aria-label', `${entry.name} file icon`);
+    tile.tabIndex = 0;
+    tile.addEventListener('dblclick', () => {
+      openFile(entry.path);
+    });
+    tile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openFile(entry.path);
+      }
+    });
+    tile.addEventListener('dragstart', (event) => {
+      if (!event.dataTransfer) return;
+      event.dataTransfer.setData('application/x-fs-path', entry.path);
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    desktopIcons.append(tile);
+  });
+};
+
+const refreshDesktopFiles = async () => {
+  await fsReady;
+  const { entries } = await fsListDir(DesktopDir);
+  desktopState.entries = entries;
+  renderDesktopIcons();
+};
+
+const createDesktopEntry = async (type) => {
+  await fsReady;
+  const { entries } = await fsListDir(DesktopDir);
+  const existing = new Set(entries.map((entry) => entry.name.toLowerCase()));
+  const defaultName = type === 'folder' ? 'New Folder' : 'New Note.txt';
+  const label = type === 'folder' ? 'Folder name' : 'File name';
+  const input = typeof prompt === 'function' ? prompt(label, defaultName) : defaultName;
+  if (input === null) return;
+  let name = (input || '').trim() || defaultName;
+  if (type === 'file' && !/\.[^./\s]{2,}$/i.test(name)) {
+    name += '.txt';
+  }
+  const splitIndex = type === 'file' ? name.lastIndexOf('.') : -1;
+  const base = splitIndex > 0 ? name.slice(0, splitIndex) : name;
+  const ext = splitIndex > 0 ? name.slice(splitIndex) : '';
+  let candidate = name;
+  let index = 1;
+  while (existing.has(candidate.toLowerCase())) {
+    candidate = `${base} (${index++})${ext}`;
+  }
+  const path = `${DesktopDir}/${candidate}`;
+  try {
+    if (type === 'folder') {
+      await fsWriteFile(path, { type: 'folder', overwrite: false });
+    } else {
+      await fsWriteFile(path, { content: '', meta: { openWith: 'notes' }, overwrite: false });
     }
-  });
-  tile.setAttribute('aria-label', `${app.title} desktop icon`);
-  tile.tabIndex = 0;
-  desktopIcons.append(tile);
+  } catch (err) {
+    notify(err.message || 'Unable to create item');
+  }
+};
+
+renderDesktopIcons();
+refreshDesktopFiles();
+
+window.addEventListener('fs-changed', (event) => {
+  const parent = event.detail?.parent;
+  if (!parent || parent === DesktopDir || parent.startsWith(`${DesktopDir}/`)) {
+    refreshDesktopFiles();
+  }
 });
 
 // Start menu toggle
@@ -363,10 +304,10 @@ startMenu.addEventListener('click', (e) => {
   if (!action) return;
   switch (action) {
     case 'open-settings':
-      wm.createWindow({ id: SettingsApp.id, title: SettingsApp.title, icon: SettingsApp.icon, content: SettingsApp.render });
+      openApp('settings');
       break;
     case 'open-about':
-      wm.createWindow({ id: AboutApp.id, title: AboutApp.title, icon: AboutApp.icon, content: AboutApp.render });
+      openApp('about');
       break;
     case 'power-reload':
       location.reload();
@@ -376,6 +317,26 @@ startMenu.addEventListener('click', (e) => {
 });
 
 // Desktop context menu
+desktop.addEventListener('dragover', (event) => {
+  if (isFsDrag(event)) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+});
+
+desktop.addEventListener('drop', async (event) => {
+  if (!isFsDrag(event)) return;
+  event.preventDefault();
+  const from = event.dataTransfer?.getData('application/x-fs-path');
+  if (!from) return;
+  await fsReady;
+  try {
+    await fsMoveFile(from, DesktopDir);
+  } catch (err) {
+    notify(err.message || 'Unable to move file');
+  }
+});
+
 desktop.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   const x = Math.min(e.clientX, window.innerWidth - 220);
@@ -390,18 +351,32 @@ contextMenu.addEventListener('click', (e) => {
   const action = item.getAttribute('data-action');
   contextMenu.classList.add('hidden');
   switch (action) {
+    case 'new-file':
+      createDesktopEntry('file');
+      break;
+    case 'new-folder':
+      createDesktopEntry('folder');
+      break;
+    case 'restore-defaults':
+      fsRestoreDefaults()
+        .then(() => refreshDesktopFiles())
+        .catch((err) => notify(err.message || 'Unable to restore files'));
+      break;
     case 'open-settings':
     case 'change-wallpaper':
-      wm.createWindow({ id: SettingsApp.id, title: SettingsApp.title, icon: SettingsApp.icon, content: SettingsApp.render });
+      openApp(action === 'open-settings' ? 'settings' : 'wallpapers');
+      break;
+    case 'open-explorer':
+      openApp('explorer');
       break;
     case 'toggle-theme':
       themeToggle.click();
       break;
     case 'open-resume':
-      wm.createWindow({ id: ResumeApp.id, title: ResumeApp.title, icon: ResumeApp.icon, content: ResumeApp.render });
+      openApp('resume');
       break;
     case 'open-about':
-      wm.createWindow({ id: AboutApp.id, title: AboutApp.title, icon: AboutApp.icon, content: AboutApp.render });
+      openApp('about');
       break;
     case 'power-reload':
       location.reload();
@@ -414,6 +389,20 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (!startMenu.classList.contains('hidden')) startMenu.classList.add('hidden');
     if (!contextMenu.classList.contains('hidden')) contextMenu.classList.add('hidden');
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+    e.preventDefault();
+    if (e.repeat) return;
+    openApp('notes').then(() => {
+      window.dispatchEvent(new CustomEvent('notes-new'));
+    });
+    return;
+  }
+  if (e.altKey && e.key === 'Tab') {
+    e.preventDefault();
+    if (e.repeat) return;
+    wm.cycleWindows(!e.shiftKey);
   }
 });
 
@@ -466,12 +455,42 @@ document.addEventListener('keydown', (e) => {
   });
 })();
 
-// Open About on first load for a nice touch
-setTimeout(() => wm.createWindow({ id: AboutApp.id, title: AboutApp.title, icon: AboutApp.icon, content: AboutApp.render }), 300);
+// Restore previous session or show About on first visit
+const savedProcs = procStore.getAll();
+if (savedProcs.length) {
+  savedProcs.forEach((p) => {
+    openApp(p.id, true).then((el) => {
+      el.style.left = p.left + 'px';
+      el.style.top = p.top + 'px';
+      el.style.width = p.width + 'px';
+      el.style.height = p.height + 'px';
+      if (p.maximized) {
+        const maxBtn = el.querySelector('.btn-max');
+        maxBtn && maxBtn.click();
+      }
+      if (p.minimized) {
+        el.style.display = 'none';
+      }
+    });
+  });
+} else {
+  setTimeout(() => openApp('about'), 300);
+}
 
 // Cross-app open events (e.g., links from About -> Projects)
 window.addEventListener('open-app', (e) => {
   const { id } = e.detail || {};
-  const app = apps.find((a) => a.id === id);
-  if (app) wm.createWindow({ id: app.id, title: app.title, icon: app.icon, content: app.render });
+  openApp(id);
 });
+
+window.addEventListener('fs-open', (e) => {
+  const path = e.detail?.path;
+  if (path) openFile(path);
+});
+
+// Preload app modules when the browser is idle
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => apps.forEach((a) => a.loader()));
+} else {
+  setTimeout(() => apps.forEach((a) => a.loader()), 2000);
+}
