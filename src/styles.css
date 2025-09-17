@@ -57,33 +57,19 @@ body {
 }
 
 @keyframes wallpaper-nebula {
-  0% {
-    background-position: 0% 20%;
-  }
-  50% {
-    background-position: 60% 80%;
-  }
-  100% {
-    background-position: 100% 30%;
-  }
+  0% { background-position: 0% 20%; }
+  50% { background-position: 60% 80%; }
+  100% { background-position: 100% 30%; }
 }
 
 @keyframes wallpaper-grid {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 100% 100%;
-  }
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
 }
 
 @keyframes wallpaper-scan {
-  0% {
-    background-position-y: 0;
-  }
-  100% {
-    background-position-y: 100%;
-  }
+  0% { background-position-y: 0; }
+  100% { background-position-y: 100%; }
 }
 
 .desktop {
@@ -103,7 +89,7 @@ body {
 .desktop-icon.file-icon .icon {
   background: rgba(255, 255, 255, 0.08);
   color: var(--fg);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 .desktop-icon.file-icon .icon svg { width: 24px; height: 24px; }
 .desktop-icon.file-icon .label { text-align: left; }
@@ -260,6 +246,7 @@ body {
 .notes-empty { padding: 24px; text-align: center; color: var(--muted); display: grid; justify-items: center; gap: 8px; }
 .notes-empty .icon svg { width: 28px; height: 28px; }
 
+/* ===== Added sections from codex branch ===== */
 .settings-app section { margin-top: 16px; display: grid; gap: 12px; }
 .settings-app .current { font-size: 12px; color: var(--muted); }
 .theme-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
@@ -323,6 +310,7 @@ body {
 .edr-card { border: 1px solid var(--window-border); border-radius: 10px; padding: 12px; background: rgba(255,255,255,0.04); display: grid; gap: 6px; }
 .edr-card strong { font-size: 14px; }
 .edr-card span { font-size: 12px; color: var(--muted); }
+/* ===== end added sections ===== */
 
 @media (max-width: 640px) {
   .window { width: calc(100vw - 24px); height: calc(100vh - 100px); left: 12px !important; top: 12px !important; }

@@ -1,3 +1,5 @@
+// WindowManager with snapping/grid, focus cycling, and taskbar sync
+
 const SNAP_SPACING = 12;
 const SNAP_MARGIN = 16;
 const DESKTOP_PADDING = 8;
@@ -29,7 +31,7 @@ export default class WindowManager {
 
     if (activeId) {
       this.activeId = activeId;
-      this.focusOrder = this.focusOrder.filter((value) => value !== activeId);
+      this.focusOrder = this.focusOrder.filter((v) => v !== activeId);
       this.focusOrder.push(activeId);
       this.onChange?.(activeId, { lastFocus: Date.now() });
     }
@@ -39,8 +41,15 @@ export default class WindowManager {
     const rect = el.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    const maxLeft = Math.max(DESKTOP_PADDING, window.innerWidth - width - DESKTOP_PADDING);
-    const maxTop = Math.max(DESKTOP_PADDING, window.innerHeight - height - TASKBAR_CLEARANCE);
+
+    const maxLeft = Math.max(
+      DESKTOP_PADDING,
+      window.innerWidth - width - DESKTOP_PADDING
+    );
+    const maxTop = Math.max(
+      DESKTOP_PADDING,
+      window.innerHeight - height - TASKBAR_CLEARANCE
+    );
 
     const rawLeft = parseFloat(el.style.left) || rect.left;
     const rawTop = parseFloat(el.style.top) || rect.top;
@@ -90,6 +99,7 @@ export default class WindowManager {
       });
     };
 
+    // Titlebar
     const titlebar = document.createElement('div');
     titlebar.className = 'titlebar';
     const titleBox = document.createElement('div');
@@ -128,6 +138,7 @@ export default class WindowManager {
     titlebar.append(titleBox, actions);
     el.append(titlebar);
 
+    // Content
     const contentEl = document.createElement('div');
     contentEl.className = 'content';
     if (typeof content === 'function') contentEl.append(content());
@@ -135,10 +146,12 @@ export default class WindowManager {
     else if (typeof content === 'string') contentEl.innerHTML = content;
     el.append(contentEl);
 
+    // Resize handle
     const resize = document.createElement('div');
     resize.className = 'resize-handle';
     el.append(resize);
 
+    // Dragging
     let drag = null;
     titlebar.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
@@ -148,12 +161,20 @@ export default class WindowManager {
       this.bringToFront(el, id);
       e.preventDefault();
     });
+
+    // Double-click to toggle maximize
     titlebar.addEventListener('dblclick', () => toggleMaximize());
 
     window.addEventListener('mousemove', (e) => {
       if (!drag) return;
-      const maxX = Math.max(DESKTOP_PADDING, window.innerWidth - el.offsetWidth - DESKTOP_PADDING);
-      const maxY = Math.max(DESKTOP_PADDING, window.innerHeight - el.offsetHeight - TASKBAR_CLEARANCE);
+      const maxX = Math.max(
+        DESKTOP_PADDING,
+        window.innerWidth - el.offsetWidth - DESKTOP_PADDING
+      );
+      const maxY = Math.max(
+        DESKTOP_PADDING,
+        window.innerHeight - el.offsetHeight - TASKBAR_CLEARANCE
+      );
       let x = Math.min(Math.max(DESKTOP_PADDING, e.clientX - drag.dx), maxX);
       let y = Math.min(Math.max(DESKTOP_PADDING, e.clientY - drag.dy), maxY);
       el.style.left = `${x}px`;
@@ -173,6 +194,7 @@ export default class WindowManager {
       drag = null;
     });
 
+    // Resize
     let res = null;
     resize.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
@@ -181,6 +203,7 @@ export default class WindowManager {
       this.bringToFront(el, id);
       e.preventDefault();
     });
+
     window.addEventListener('mousemove', (e) => {
       if (!res) return;
       const minW = 280;
@@ -190,11 +213,13 @@ export default class WindowManager {
       el.style.width = `${w}px`;
       el.style.height = `${h}px`;
     });
+
     window.addEventListener('mouseup', () => {
       if (res) emitState();
       res = null;
     });
 
+    // Maximize / Minimize / Close
     let prevRect = null;
     const toggleMaximize = () => {
       if (!el.classList.contains('maximized')) {
@@ -236,10 +261,13 @@ export default class WindowManager {
       }
       emitState();
     });
+
     closeBtn.addEventListener('click', () => this.closeWindow(id));
 
+    // Focus on mousedown
     el.addEventListener('mousedown', () => this.bringToFront(el, id));
 
+    // Taskbar button
     taskButton = document.createElement('button');
     taskButton.className = 'task-button active';
     taskButton.innerHTML = `<span class="icon">${icon || '🗔'}</span><span class="label">${title}</span>`;
@@ -251,6 +279,7 @@ export default class WindowManager {
         this.bringToFront(el, id);
       } else {
         el.style.display = 'none';
+        taskButton.classList.remove('active');
       }
       emitState();
     });
@@ -285,7 +314,7 @@ export default class WindowManager {
     target.el.remove();
     target.taskButton.remove();
     this.windows.delete(id);
-    this.focusOrder = this.focusOrder.filter((value) => value !== id);
+    this.focusOrder = this.focusOrder.filter((v) => v !== id);
     if (this.activeId === id) {
       this.activeId = this.focusOrder[this.focusOrder.length - 1] || null;
       if (this.activeId) {

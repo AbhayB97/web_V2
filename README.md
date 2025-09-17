@@ -25,6 +25,14 @@ Desktop‑style portfolio inspired by Dustin Brett’s [daedalOS]. Built as a st
 - EDR Viewer (`src/apps/edrViewer.js`) renders mock detection metrics with charts, coverage meters, and category summaries
 - Wallpapers (`src/apps/wallpapers.js`) provides static and animated wallpaper presets with quick randomization controls
 
+## Filesystem & productivity apps
+
+- IndexedDB-backed filesystem in `src/fs.js` powers the File Explorer and Notes apps
+- File Explorer (`src/apps/explorer.js`) supports navigation, drag-and-drop, and desktop integration
+- Notes (`src/apps/notes.js`) loads `.txt/.md` files, auto-saves changes, and lists saved notes
+- Desktop icons combine pinned apps with files stored in the `/Desktop` directory of the filesystem
+
+
 ## Roadmap (Phases)
 
 1) MVP UI and window manager (done)

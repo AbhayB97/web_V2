@@ -190,6 +190,7 @@ const getEntryIcon = (entry) => {
 
 const renderDesktopIcons = () => {
   desktopIcons.innerHTML = '';
+  // App tiles
   apps.forEach((app) => {
     const tile = document.createElement('button');
     tile.className = 'desktop-icon app-icon';
@@ -208,6 +209,7 @@ const renderDesktopIcons = () => {
     desktopIcons.append(tile);
   });
 
+  // File/Folder tiles
   desktopState.entries.forEach((entry) => {
     const tile = document.createElement('button');
     tile.className = 'desktop-icon file-icon';
@@ -316,7 +318,7 @@ startMenu.addEventListener('click', (e) => {
   startMenu.classList.add('hidden');
 });
 
-// Desktop context menu
+// Desktop context menu + drag-drop
 desktop.addEventListener('dragover', (event) => {
   if (isFsDrag(event)) {
     event.preventDefault();
@@ -363,8 +365,10 @@ contextMenu.addEventListener('click', (e) => {
         .catch((err) => notify(err.message || 'Unable to restore files'));
       break;
     case 'open-settings':
+      openApp('settings');
+      break;
     case 'change-wallpaper':
-      openApp(action === 'open-settings' ? 'settings' : 'wallpapers');
+      openApp('wallpapers');
       break;
     case 'open-explorer':
       openApp('explorer');

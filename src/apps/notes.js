@@ -170,6 +170,7 @@ const NotesApp = {
       refreshList();
     });
 
+    // ---- merged from codex/prepare-codebase-summary-3er28m ----
     const createUniqueNoteName = async (baseName) => {
       const { files } = await listDir(NotesDir);
       const existing = new Set(files.map((file) => file.name.toLowerCase()));
@@ -193,6 +194,7 @@ const NotesApp = {
       await refreshList();
       await openNote(path);
     };
+    // -----------------------------------------------------------
 
     newButton.addEventListener('click', async () => {
       if (state.dirty) {
@@ -240,12 +242,15 @@ const NotesApp = {
     window.__notesOpenListener = openListener;
     window.addEventListener('open-file', openListener);
 
+    // ---- merged quick-note event handler from codex branch ----
     const quickNoteListener = () => {
       if (state.dirty) {
         const discard = safeConfirm('Discard unsaved changes?');
         if (!discard) return;
       }
-      createAndOpenNote('Quick Note.txt').catch((err) => safeAlert(err.message || 'Unable to create note'));
+      createAndOpenNote('Quick Note.txt').catch((err) =>
+        safeAlert(err.message || 'Unable to create note')
+      );
     };
 
     if (window.__notesQuickListener) {
@@ -253,6 +258,7 @@ const NotesApp = {
     }
     window.__notesQuickListener = quickNoteListener;
     window.addEventListener('notes-new', quickNoteListener);
+    // -----------------------------------------------------------
 
     refreshList();
 

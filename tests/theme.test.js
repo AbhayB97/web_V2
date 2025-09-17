@@ -12,7 +12,12 @@ beforeEach(() => {
   localStorage.clear();
   window.matchMedia =
     window.matchMedia ||
-    ((query) => ({ matches: false, media: query, addListener: () => {}, removeListener: () => {} }));
+    ((query) => ({
+      matches: false,
+      media: query,
+      addListener: () => {},
+      removeListener: () => {},
+    }));
 });
 
 describe('theme helpers', () => {
@@ -21,7 +26,7 @@ describe('theme helpers', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
-  it('applyWallpaper sets css variable', () => {
+  it('applyWallpaper sets css variables and attributes from object', () => {
     applyWallpaper({ id: 'gridwave', css: 'foo', size: '120%', animation: 'spin 1s' });
     const style = document.documentElement.style;
     expect(style.getPropertyValue('--wallpaper')).toBe('foo');
@@ -30,14 +35,17 @@ describe('theme helpers', () => {
     expect(document.documentElement.getAttribute('data-wallpaper')).toBe('gridwave');
   });
 
-  it('initTheme loads saved prefs and toggles theme', () => {
+  it('initTheme loads saved prefs (theme + wallpaper) and cycles theme', () => {
     localStorage.setItem('theme', 'light');
     localStorage.setItem('wallpaper', JSON.stringify({ id: 'nebula', css: 'bar', size: '200%' }));
     const btn = document.createElement('button');
     initTheme({ themeToggle: btn });
+
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.documentElement.getAttribute('data-wallpaper')).toBe('nebula');
     expect(document.documentElement.style.getPropertyValue('--wallpaper')).toBe('bar');
+
+    // Cycle: light -> terminal -> dark
     btn.click();
     expect(document.documentElement.getAttribute('data-theme')).toBe('terminal');
     btn.click();
@@ -49,6 +57,7 @@ describe('theme helpers', () => {
     initTheme();
     window.dispatchEvent(new CustomEvent('set-theme', { detail: { theme: 'light' } }));
     expect(localStorage.getItem('theme')).toBe('light');
+
     window.dispatchEvent(
       new CustomEvent('set-wallpaper', {
         detail: { wallpaper: { id: 'gridwave', css: 'baz', size: '180%' } },
