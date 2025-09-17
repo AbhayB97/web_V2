@@ -62,6 +62,7 @@ reddit - Searches Reddit.
 
 const sumfetchLines = [
   '',
+
  `
            ▄▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄                  sumfetch
         ▄▓▓▀ ▄▓▓▀▓▓▓▀▓▓▄ ▀▀▓▓▄              -----------
@@ -81,6 +82,8 @@ const sumfetchLines = [
 `];
 
 const bannerAscii = String.raw`
+
+                                                                                                                     
 
                                                                                                                           
                                                                                                                           

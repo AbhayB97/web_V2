@@ -283,13 +283,13 @@ body {
 .project-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 
 .terminal-app { display: grid; grid-template-rows: 1fr auto; gap: 12px; height: 100%; font-family: 'Fira Code', 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace; }
-.terminal-output { background: rgba(0, 0, 0, 0.65); border: 1px solid var(--window-border); border-radius: 12px; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; color: #97f5b6; }
-[data-theme="light"] .terminal-output { background: rgba(14, 24, 20, 0.85); color: #b3ffe0; }
+.terminal-output { background: rgba(0, 0, 0, 0.65); border: 1px solid var(--window-border); border-radius: 12px; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; color: #d4ffe6; }
+[data-theme="light"] .terminal-output { background: rgba(14, 24, 20, 0.85); color: #e8fff4; }
 .terminal-form { display: flex; align-items: center; gap: 10px; border: 1px solid var(--window-border); border-radius: 12px; padding: 8px 12px; background: rgba(0,0,0,0.35); }
 .terminal-prompt { color: var(--accent); font-size: 13px; }
 .terminal-form input { flex: 1; border: none; background: transparent; color: var(--fg); font-family: inherit; font-size: 14px; outline: none; }
 .terminal-line { font-size: 13px; }
-.terminal-line.system { color: var(--muted); }
+.terminal-line.system { color: #baffd7; }
 .terminal-line.input { color: var(--accent); }
 
 .edr-viewer { display: grid; gap: 16px; }
