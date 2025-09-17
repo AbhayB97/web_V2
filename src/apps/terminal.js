@@ -62,26 +62,28 @@ reddit - Searches Reddit.
 
 const sumfetchLines = [
   '',
-  `           ▄▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄\u00a0                 sumfetch`,
-  `        ▄▓▓▀\u00a0▄▓▓▀▓▓▓▀▓▓▄\u00a0▀▀▓▓▄\u00a0             -----------`,
-  `      ▓▓▀  ▄▓▀\u00a0  ▐▓▓  ▀▓▓\u00a0   ▓▓▄\u00a0            ABOUT`,
-  `    ▄▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\u00a0           ${config.name}`,
-  `   ▓▓     ▓▓▓\u00a0   ▐▓▓\u00a0   ▐▓▓\u00a0    ▓▓\u00a0          <u><a href="${config.resume}" target="_blank">resume</a></u>`,
-  `▐▓▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▓       爵 <u><a href="${config.repo}" target="_blank">Github repo</a></u>`,
-  `▐▓\u00a0                                ▐▓       -----------`,
-  `▐▓\u00a0       >                        ▐▓        CONTACT `,
-  `▐▓\u00a0                                ▐▓        <u><a href="mailto:${config.email}" target="_blank">${config.email}</a></u>`,
-  `▐▓▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▓        <u><a href="https://github.com/${config.social.github}" target="_blank">github.com/${config.social.github}</a></u>`,
-  `   ▓▓      ▐▓▓\u00a0   ▓▓\u00a0   ▐▓▓\u00a0    ▓▓\u00a0          <u><a href="https://linkedin.com/in/${config.social.linkedin}" target="_blank">linkedin.com/in/${config.social.linkedin}</a></u>`,
-  `    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\u00a0          -----------`,
-  `      ▓▓▓\u00a0  ▐▓▓\u00a0  ▓▓\u00a0  ▓▓▓   ▓▓▀\u00a0            `,
-  `        ▀▓▓▄▄\u00a0▀▓▓▄▓▓▄▓▓▓▄▄▓▓▀\u00a0              `,
-  `            ▀▓▓▓▓▓▓▓▓▓▓▓▀▀\u00a0                 `,
-  '',
-  '',
-];
+
+ `
+           ▄▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄                  sumfetch
+        ▄▓▓▀ ▄▓▓▀▓▓▓▀▓▓▄ ▀▀▓▓▄              -----------
+      ▓▓▀  ▄▓▀   ▐▓▓  ▀▓▓    ▓▓▄             ABOUT
+    ▄▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓            ${config.name}
+   ▓▓     ▓▓▓    ▐▓▓    ▐▓▓     ▓▓           <u><a href="${config.resume_url}" target="_blank">resume</a></u>
+▐▓▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▓       爵 <u><a href="${config.repo}" target="_blank">Github repo</a></u>
+▐▓                                 ▐▓       -----------
+▐▓        >                        ▐▓        CONTACT 
+▐▓                                 ▐▓        <u><a href="mailto:${config.email}" target="_blank">${config.email}</a></u>
+▐▓▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▓        <u><a href="https://github.com/${config.social.github}" target="_blank">github.com/${config.social.github}</a></u>
+   ▓▓      ▐▓▓    ▓▓    ▐▓▓     ▓▓           <u><a href="https://linkedin.com/in/${config.social.linkedin}" target="_blank">linkedin.com/in/${config.social.linkedin}</a></u>
+    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓           -----------
+      ▓▓▓   ▐▓▓   ▓▓   ▓▓▓   ▓▓▀             
+        ▀▓▓▄▄ ▀▓▓▄▓▓▄▓▓▓▄▄▓▓▀               
+            ▀▓▓▓▓▓▓▓▓▓▓▓▀▀  
+`];
 
 const bannerAscii = String.raw`
+
+                                                                                                                     
 
                                                                                                                           
                                                                                                                           
