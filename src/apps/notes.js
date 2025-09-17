@@ -170,6 +170,32 @@ const NotesApp = {
       refreshList();
     });
 
+    // ---- merged from codex/prepare-codebase-summary-3er28m ----
+    const createUniqueNoteName = async (baseName) => {
+      const { files } = await listDir(NotesDir);
+      const existing = new Set(files.map((file) => file.name.toLowerCase()));
+      const base = isTextFile(baseName) ? baseName : `${baseName}.txt`;
+      if (!existing.has(base.toLowerCase())) return base;
+      const stem = base.replace(/\.[^.]+$/, '');
+      const ext = base.slice(stem.length);
+      let index = 2;
+      let candidate = `${stem} ${index}${ext}`;
+      while (existing.has(candidate.toLowerCase())) {
+        index += 1;
+        candidate = `${stem} ${index}${ext}`;
+      }
+      return candidate;
+    };
+
+    const createAndOpenNote = async (name) => {
+      const finalName = await createUniqueNoteName(name);
+      const path = join(NotesDir, finalName);
+      await writeFile(path, { content: '', meta: { openWith: 'notes' }, overwrite: false });
+      await refreshList();
+      await openNote(path);
+    };
+    // -----------------------------------------------------------
+
     newButton.addEventListener('click', async () => {
       if (state.dirty) {
         const discard = safeConfirm('Discard unsaved changes?');
@@ -177,12 +203,8 @@ const NotesApp = {
       }
       const name = safePrompt('Note name', 'New Note.txt');
       if (!name) return;
-      const finalName = isTextFile(name) ? name : `${name}.txt`;
-      const path = join(NotesDir, finalName);
       try {
-        await writeFile(path, { content: '', meta: { openWith: 'notes' }, overwrite: false });
-        await refreshList();
-        await openNote(path);
+        await createAndOpenNote(name);
       } catch (err) {
         safeAlert(err.message || 'Unable to create note');
       }
@@ -219,6 +241,24 @@ const NotesApp = {
     }
     window.__notesOpenListener = openListener;
     window.addEventListener('open-file', openListener);
+
+    // ---- merged quick-note event handler from codex branch ----
+    const quickNoteListener = () => {
+      if (state.dirty) {
+        const discard = safeConfirm('Discard unsaved changes?');
+        if (!discard) return;
+      }
+      createAndOpenNote('Quick Note.txt').catch((err) =>
+        safeAlert(err.message || 'Unable to create note')
+      );
+    };
+
+    if (window.__notesQuickListener) {
+      window.removeEventListener('notes-new', window.__notesQuickListener);
+    }
+    window.__notesQuickListener = quickNoteListener;
+    window.addEventListener('notes-new', quickNoteListener);
+    // -----------------------------------------------------------
 
     refreshList();
 

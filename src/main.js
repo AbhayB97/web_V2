@@ -2,7 +2,18 @@
 // Minimal window manager + basic apps
 
 import WindowManager from './windowManager.js';
-import { iconUser, iconBriefcase, iconMail, iconGear, iconDoc, iconFolder, iconNote } from './icons.js';
+import {
+  iconUser,
+  iconBriefcase,
+  iconMail,
+  iconGear,
+  iconDoc,
+  iconFolder,
+  iconNote,
+  iconChart,
+  iconTerminal,
+  iconPalette,
+} from './icons.js';
 import { createProcessStore } from './store.js';
 import { initTheme } from './theme.js';
 import {
@@ -18,12 +29,15 @@ import {
 // Application metadata with lazy loaders for improved performance
 const apps = [
   { id: 'about', title: 'About Abhay', icon: iconUser, loader: () => import('./apps/about.js') },
-  { id: 'projects', title: 'Projects', icon: iconBriefcase, loader: () => import('./apps/projects.js') },
+  { id: 'projects', title: 'Projects Hub', icon: iconBriefcase, loader: () => import('./apps/projects.js') },
   { id: 'contact', title: 'Contact', icon: iconMail, loader: () => import('./apps/contact.js') },
   { id: 'settings', title: 'Settings', icon: iconGear, loader: () => import('./apps/settings.js') },
   { id: 'resume', title: 'Resume', icon: iconDoc, loader: () => import('./apps/resume.js') },
   { id: 'notes', title: 'Notes', icon: iconNote, loader: () => import('./apps/notes.js') },
   { id: 'explorer', title: 'File Explorer', icon: iconFolder, loader: () => import('./apps/explorer.js') },
+  { id: 'edr-viewer', title: 'EDR Viewer', icon: iconChart, loader: () => import('./apps/edrViewer.js') },
+  { id: 'terminal', title: 'Security Terminal', icon: iconTerminal, loader: () => import('./apps/terminal.js') },
+  { id: 'wallpapers', title: 'Wallpapers', icon: iconPalette, loader: () => import('./apps/wallpapers.js') },
 ];
 
 // Bootstrapping
@@ -109,7 +123,16 @@ async function openFile(path) {
 }
 
 // Start menu population: pinned grid + all apps
-const pinned = ['explorer', 'notes', 'projects', 'resume', 'about', 'contact', 'settings'];
+const pinned = [
+  'projects',
+  'edr-viewer',
+  'terminal',
+  'explorer',
+  'notes',
+  'resume',
+  'wallpapers',
+  'settings',
+];
 const order = [
   ...apps.filter((a) => pinned.includes(a.id)),
   ...apps.filter((a) => !pinned.includes(a.id)),
@@ -342,8 +365,10 @@ contextMenu.addEventListener('click', (e) => {
         .catch((err) => notify(err.message || 'Unable to restore files'));
       break;
     case 'open-settings':
-    case 'change-wallpaper':
       openApp('settings');
+      break;
+    case 'change-wallpaper':
+      openApp('wallpapers');
       break;
     case 'open-explorer':
       openApp('explorer');
@@ -368,6 +393,20 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (!startMenu.classList.contains('hidden')) startMenu.classList.add('hidden');
     if (!contextMenu.classList.contains('hidden')) contextMenu.classList.add('hidden');
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+    e.preventDefault();
+    if (e.repeat) return;
+    openApp('notes').then(() => {
+      window.dispatchEvent(new CustomEvent('notes-new'));
+    });
+    return;
+  }
+  if (e.altKey && e.key === 'Tab') {
+    e.preventDefault();
+    if (e.repeat) return;
+    wm.cycleWindows(!e.shiftKey);
   }
 });
 

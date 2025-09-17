@@ -1,3 +1,10 @@
+// WindowManager with snapping/grid, focus cycling, and taskbar sync
+
+const SNAP_SPACING = 12;
+const SNAP_MARGIN = 16;
+const DESKTOP_PADDING = 8;
+const TASKBAR_CLEARANCE = 56;
+
 export default class WindowManager {
   constructor({ desktopEl, taskbarAppsEl, onChange, onClose }) {
     this.desktopEl = desktopEl;
@@ -6,36 +13,68 @@ export default class WindowManager {
     this.onClose = onClose;
     this.z = 10;
     this.windows = new Map(); // id -> { el, taskButton }
+    this.focusOrder = [];
+    this.activeId = null;
   }
 
-  bringToFront(el) {
+  bringToFront(el, idHint) {
     this.z += 1;
     el.style.zIndex = String(this.z);
-    el.classList.add('active');
+    let activeId = idHint || null;
 
-    // Deactivate others
-    for (const { el: other } of this.windows.values()) {
-      if (other !== el) other.classList.remove('active');
+    for (const [id, { el: other, taskButton }] of this.windows.entries()) {
+      const isActive = other === el;
+      other.classList.toggle('active', isActive);
+      taskButton.classList.toggle('active', isActive);
+      if (isActive) activeId = id;
     }
 
-    // Update task buttons
-    for (const { el: w, taskButton } of this.windows.values()) {
-      taskButton.classList.toggle('active', w === el);
+    if (activeId) {
+      this.activeId = activeId;
+      this.focusOrder = this.focusOrder.filter((v) => v !== activeId);
+      this.focusOrder.push(activeId);
+      this.onChange?.(activeId, { lastFocus: Date.now() });
     }
+  }
 
-    for (const [id, { el: w }] of this.windows.entries()) {
-      if (w === el) this.onChange?.(id, { lastFocus: Date.now() });
-    }
+  snapWindow(el) {
+    const rect = el.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    const maxLeft = Math.max(
+      DESKTOP_PADDING,
+      window.innerWidth - width - DESKTOP_PADDING
+    );
+    const maxTop = Math.max(
+      DESKTOP_PADDING,
+      window.innerHeight - height - TASKBAR_CLEARANCE
+    );
+
+    const rawLeft = parseFloat(el.style.left) || rect.left;
+    const rawTop = parseFloat(el.style.top) || rect.top;
+
+    let left = Math.round(rawLeft / SNAP_SPACING) * SNAP_SPACING;
+    let top = Math.round(rawTop / SNAP_SPACING) * SNAP_SPACING;
+
+    if (Math.abs(left - DESKTOP_PADDING) <= SNAP_MARGIN) left = DESKTOP_PADDING;
+    if (Math.abs(left - maxLeft) <= SNAP_MARGIN) left = maxLeft;
+    if (Math.abs(top - DESKTOP_PADDING) <= SNAP_MARGIN) top = DESKTOP_PADDING;
+    if (Math.abs(top - maxTop) <= SNAP_MARGIN) top = maxTop;
+
+    left = Math.min(Math.max(DESKTOP_PADDING, left), maxLeft);
+    top = Math.min(Math.max(DESKTOP_PADDING, top), maxTop);
+
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
   }
 
   createWindow({ id, title, icon, content }) {
     if (this.windows.has(id)) {
-      // Restore existing window
-      const w = this.windows.get(id);
-      w.el.style.display = 'grid';
-      w.taskButton.classList.add('active');
-      this.bringToFront(w.el);
-      return w.el;
+      const existing = this.windows.get(id);
+      existing.el.style.display = 'grid';
+      this.bringToFront(existing.el, id);
+      return existing.el;
     }
 
     const el = document.createElement('div');
@@ -45,6 +84,8 @@ export default class WindowManager {
     el.style.left = Math.round(60 + Math.random() * 120) + 'px';
     el.style.top = Math.round(60 + Math.random() * 80) + 'px';
     el.style.zIndex = String(++this.z);
+
+    let taskButton = null;
 
     const emitState = () => {
       const rect = el.getBoundingClientRect();
@@ -114,9 +155,10 @@ export default class WindowManager {
     let drag = null;
     titlebar.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
+      if (el.classList.contains('maximized')) return;
       const rect = el.getBoundingClientRect();
       drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
-      this.bringToFront(el);
+      this.bringToFront(el, id);
       e.preventDefault();
     });
 
@@ -125,22 +167,29 @@ export default class WindowManager {
 
     window.addEventListener('mousemove', (e) => {
       if (!drag) return;
-      const maxX = window.innerWidth - el.offsetWidth - 6;
-      const maxY = window.innerHeight - el.offsetHeight - 56; // taskbar area
-      let x = Math.min(Math.max(6, e.clientX - drag.dx), Math.max(6, maxX));
-      let y = Math.min(Math.max(6, e.clientY - drag.dy), Math.max(6, maxY));
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
+      const maxX = Math.max(
+        DESKTOP_PADDING,
+        window.innerWidth - el.offsetWidth - DESKTOP_PADDING
+      );
+      const maxY = Math.max(
+        DESKTOP_PADDING,
+        window.innerHeight - el.offsetHeight - TASKBAR_CLEARANCE
+      );
+      let x = Math.min(Math.max(DESKTOP_PADDING, e.clientX - drag.dx), maxX);
+      let y = Math.min(Math.max(DESKTOP_PADDING, e.clientY - drag.dy), maxY);
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
     });
 
     window.addEventListener('mouseup', () => {
       if (drag) {
-        // Snap to top to maximize (near-clone behavior)
         const topNow = parseInt(el.style.top || '0', 10);
-        if (topNow <= 8 && !el.classList.contains('maximized')) {
+        if (topNow <= DESKTOP_PADDING + 2 && !el.classList.contains('maximized')) {
           toggleMaximize();
+        } else if (!el.classList.contains('maximized')) {
+          this.snapWindow(el);
+          emitState();
         }
-        emitState();
       }
       drag = null;
     });
@@ -151,17 +200,18 @@ export default class WindowManager {
       if (e.button !== 0) return;
       const rect = el.getBoundingClientRect();
       res = { w: rect.width, h: rect.height, x: e.clientX, y: e.clientY };
-      this.bringToFront(el);
+      this.bringToFront(el, id);
       e.preventDefault();
     });
 
     window.addEventListener('mousemove', (e) => {
       if (!res) return;
-      const minW = 280, minH = 200;
+      const minW = 280;
+      const minH = 200;
       const w = Math.max(minW, res.w + (e.clientX - res.x));
       const h = Math.max(minH, res.h + (e.clientY - res.y));
-      el.style.width = w + 'px';
-      el.style.height = h + 'px';
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
     });
 
     window.addEventListener('mouseup', () => {
@@ -176,8 +226,8 @@ export default class WindowManager {
         const rect = el.getBoundingClientRect();
         prevRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
         el.classList.add('maximized');
-        el.style.left = '8px';
-        el.style.top = '8px';
+        el.style.left = `${DESKTOP_PADDING}px`;
+        el.style.top = `${DESKTOP_PADDING}px`;
         el.style.width = 'calc(100vw - 24px)';
         el.style.height = 'calc(100vh - 68px)';
         maxBtn.title = 'Restore';
@@ -186,10 +236,11 @@ export default class WindowManager {
       } else {
         el.classList.remove('maximized');
         if (prevRect) {
-          el.style.left = prevRect.left + 'px';
-          el.style.top = prevRect.top + 'px';
-          el.style.width = prevRect.width + 'px';
-          el.style.height = prevRect.height + 'px';
+          el.style.left = `${prevRect.left}px`;
+          el.style.top = `${prevRect.top}px`;
+          el.style.width = `${prevRect.width}px`;
+          el.style.height = `${prevRect.height}px`;
+          this.snapWindow(el);
         }
         maxBtn.title = 'Maximize';
         maxBtn.setAttribute('aria-label', 'Maximize');
@@ -197,16 +248,16 @@ export default class WindowManager {
       }
       emitState();
     };
-
     maxBtn.addEventListener('click', toggleMaximize);
+
     minBtn.addEventListener('click', () => {
       if (el.style.display !== 'none') {
         el.style.display = 'none';
-        taskButton.classList.remove('active');
+        taskButton?.classList.remove('active');
       } else {
         el.style.display = 'grid';
-        this.bringToFront(el);
-        taskButton.classList.add('active');
+        this.bringToFront(el, id);
+        taskButton?.classList.add('active');
       }
       emitState();
     });
@@ -214,20 +265,18 @@ export default class WindowManager {
     closeBtn.addEventListener('click', () => this.closeWindow(id));
 
     // Focus on mousedown
-    el.addEventListener('mousedown', () => this.bringToFront(el));
+    el.addEventListener('mousedown', () => this.bringToFront(el, id));
 
     // Taskbar button
-    const taskButton = document.createElement('button');
+    taskButton = document.createElement('button');
     taskButton.className = 'task-button active';
     taskButton.innerHTML = `<span class="icon">${icon || '🗔'}</span><span class="label">${title}</span>`;
     taskButton.addEventListener('click', () => {
       if (el.style.display === 'none') {
         el.style.display = 'grid';
-        this.bringToFront(el);
-        taskButton.classList.add('active');
+        this.bringToFront(el, id);
       } else if (parseInt(el.style.zIndex || '0', 10) < this.z) {
-        this.bringToFront(el);
-        taskButton.classList.add('active');
+        this.bringToFront(el, id);
       } else {
         el.style.display = 'none';
         taskButton.classList.remove('active');
@@ -237,19 +286,42 @@ export default class WindowManager {
 
     this.taskbarAppsEl.append(taskButton);
     this.desktopEl.append(el);
-
     this.windows.set(id, { el, taskButton });
+    this.bringToFront(el, id);
+    this.snapWindow(el);
     emitState();
-
     return el;
   }
 
+  cycleWindows(forward = true) {
+    if (!this.focusOrder.length) return;
+    const order = this.focusOrder.slice();
+    const active = this.activeId ?? order[order.length - 1];
+    const index = order.indexOf(active);
+    const nextIndex = forward
+      ? (index + 1) % order.length
+      : (index - 1 + order.length) % order.length;
+    const nextId = order[nextIndex];
+    const nextWindow = this.windows.get(nextId);
+    if (!nextWindow) return;
+    nextWindow.el.style.display = 'grid';
+    this.bringToFront(nextWindow.el, nextId);
+  }
+
   closeWindow(id) {
-    const w = this.windows.get(id);
-    if (!w) return;
-    w.el.remove();
-    w.taskButton.remove();
+    const target = this.windows.get(id);
+    if (!target) return;
+    target.el.remove();
+    target.taskButton.remove();
     this.windows.delete(id);
+    this.focusOrder = this.focusOrder.filter((v) => v !== id);
+    if (this.activeId === id) {
+      this.activeId = this.focusOrder[this.focusOrder.length - 1] || null;
+      if (this.activeId) {
+        const next = this.windows.get(this.activeId);
+        if (next) this.bringToFront(next.el, this.activeId);
+      }
+    }
     this.onClose?.(id);
   }
 }

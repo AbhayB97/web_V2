@@ -1,16 +1,10 @@
-const wallpapers = {
-  Aurora: `radial-gradient(60vw 60vh at 80% -10%, rgba(62,84,172,0.6) 0, transparent 70%),
-           radial-gradient(40vw 40vh at -10% 80%, rgba(34,143,84,0.6) 0, transparent 60%),
-           var(--bg)`,
-  Sunset: `radial-gradient(60vw 50vh at 80% 0%, rgba(255,140,66,0.55) 0, transparent 70%),
-           radial-gradient(50vw 40vh at 0% 90%, rgba(255,72,120,0.45) 0, transparent 65%),
-           var(--bg)`,
-  Matrix: `repeating-linear-gradient(90deg, #0e0f13, #0e0f13 2px, #0f171a 2px, #0f171a 4px),
-           radial-gradient(35vw 35vh at 20% 10%, rgba(10, 140, 60, 0.25) 0, transparent 70%),
-           radial-gradient(30vw 30vh at 90% 80%, rgba(10, 140, 60, 0.25) 0, transparent 70%)`,
-};
-
 import { iconGear } from '../icons.js';
+
+const themes = [
+  { id: 'light', name: 'Daylight' },
+  { id: 'dark', name: 'Midnight' },
+  { id: 'terminal', name: 'Terminal Green' },
+];
 
 const SettingsApp = {
   id: 'settings',
@@ -18,49 +12,87 @@ const SettingsApp = {
   icon: iconGear,
   render() {
     const el = document.createElement('div');
-    el.className = 'prose';
-    const curTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const header = `<h1>Settings</h1><p>Adjust theme and wallpaper.</p>`;
-    const themeCtl = `
-      <h3>Theme</h3>
-      <div class="grid">
-        <button class="card" data-theme="light">Light</button>
-        <button class="card" data-theme="dark">Dark</button>
-      </div>
-      <p>Current: <strong>${curTheme}</strong></p>
-    `;
-    const wallCtl = `
-      <h3>Wallpaper</h3>
-      <div class="grid projects" id="wall-grid"></div>
-    `;
-    el.innerHTML = header + themeCtl + wallCtl;
+    el.className = 'prose settings-app';
 
-    // Theme handlers
-    el.querySelectorAll('[data-theme]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const theme = btn.getAttribute('data-theme');
-        const evt = new CustomEvent('set-theme', { detail: { theme } });
-        window.dispatchEvent(evt);
-        el.querySelector('p strong').textContent = theme;
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const wallpaperId = document.documentElement.getAttribute('data-wallpaper') || 'aurora';
+
+    el.innerHTML = `
+      <h1>Settings</h1>
+      <p>Personalize the desktop experience with themes and animated wallpapers.</p>
+      <section>
+        <h3>Theme</h3>
+        <div class="theme-grid"></div>
+        <p class="current current-theme">Current theme: <strong>${currentTheme}</strong></p>
+      </section>
+      <section class="wallpaper-section">
+        <h3>Wallpapers</h3>
+        <p>Launch the wallpaper gallery to pick static gradients or animated scenes.</p>
+        <button class="wallpaper-launch">Open Wallpaper Gallery</button>
+        <p class="current current-wallpaper">Active wallpaper preset: <strong>${wallpaperId}</strong></p>
+      </section>
+    `;
+
+    const themeGrid = el.querySelector('.theme-grid');
+    const themeStatus = el.querySelector('.current-theme strong');
+    const wallpaperStatus = el.querySelector('.current-wallpaper strong');
+
+    const applyTheme = (theme) => {
+      window.dispatchEvent(new CustomEvent('set-theme', { detail: { theme } }));
+      themeStatus.textContent = theme;
+      themeGrid.querySelectorAll('button').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.theme === theme);
       });
-    });
+    };
 
-    // Wallpaper grid
-    const grid = el.querySelector('#wall-grid');
-    Object.entries(wallpapers).forEach(([name, css]) => {
+    themes.forEach((theme) => {
       const btn = document.createElement('button');
-      btn.className = 'card';
-      btn.style.backgroundImage = css.includes('var(--bg)') ? undefined : css;
-      btn.style.background = css;
-      btn.style.height = '64px';
-      btn.style.border = '1px solid var(--window-border)';
-      btn.innerHTML = `<strong>${name}</strong>`;
-      btn.addEventListener('click', () => {
-        const evt = new CustomEvent('set-wallpaper', { detail: { css } });
-        window.dispatchEvent(evt);
-      });
-      grid.append(btn);
+      btn.type = 'button';
+      btn.dataset.theme = theme.id;
+      btn.className = 'theme-card';
+      btn.innerHTML = `<strong>${theme.name}</strong><span>${theme.id}</span>`;
+      btn.classList.toggle('active', theme.id === currentTheme);
+      btn.addEventListener('click', () => applyTheme(theme.id));
+      themeGrid.append(btn);
     });
+
+    const launchButton = el.querySelector('.wallpaper-launch');
+    launchButton.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('open-app', { detail: { id: 'wallpapers' } }));
+    });
+
+    const handleThemeEvent = (event) => {
+      const theme = event.detail?.theme;
+      if (!theme) return;
+      themeStatus.textContent = theme;
+      themeGrid.querySelectorAll('button').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.theme === theme);
+      });
+    };
+
+    const handleWallpaperEvent = (event) => {
+      const detail = event.detail || {};
+      const wallpaper = detail.wallpaper || null;
+      if (wallpaper?.id) {
+        wallpaperStatus.textContent = wallpaper.id;
+      } else if (detail.id) {
+        wallpaperStatus.textContent = detail.id;
+      } else if (detail.css) {
+        wallpaperStatus.textContent = 'custom';
+      }
+    };
+
+    if (window.__settingsThemeListener) {
+      window.removeEventListener('set-theme', window.__settingsThemeListener);
+    }
+    window.__settingsThemeListener = handleThemeEvent;
+    window.addEventListener('set-theme', handleThemeEvent);
+
+    if (window.__settingsWallpaperListener) {
+      window.removeEventListener('set-wallpaper', window.__settingsWallpaperListener);
+    }
+    window.__settingsWallpaperListener = handleWallpaperEvent;
+    window.addEventListener('set-wallpaper', handleWallpaperEvent);
 
     return el;
   },

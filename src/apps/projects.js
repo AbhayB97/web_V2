@@ -1,50 +1,67 @@
-import { iconBriefcase } from '../icons.js';
+import { iconBriefcase, iconChart, iconTerminal, iconFolder } from '../icons.js';
+
+const showcase = [
+  {
+    id: 'vectorizer',
+    title: 'Vectorizer',
+    description: 'Transform messy indicators into actionable intelligence with one click.',
+    icon: iconFolder,
+    action: { type: 'link', href: 'https://abhay.bhingradia.com/vectorizer' },
+  },
+  {
+    id: 'edr-viewer',
+    title: 'EDR Viewer',
+    description: 'Visualize detection coverage, risk trends, and anomaly counts.',
+    icon: iconChart,
+    action: { type: 'app', appId: 'edr-viewer' },
+  },
+  {
+    id: 'terminal',
+    title: 'Security Terminal',
+    description: 'Run canned investigations and share canned responses with stakeholders.',
+    icon: iconTerminal,
+    action: { type: 'app', appId: 'terminal' },
+  },
+];
 
 const ProjectsApp = {
   id: 'projects',
-  title: 'Projects',
+  title: 'Projects Hub',
   icon: iconBriefcase,
   render() {
-    const container = document.createElement('div');
-    container.className = 'prose';
-    const projects = [
-      {
-        name: 'The Missing Link (Research Paper)',
-        desc: 'Why governments should consolidate cybersecurity and privacy regulations.',
-        link: 'https://github.com/AbhayB97/The-Missing-Link',
-      },
-      {
-        name: 'Secure Terminal Portfolio',
-        desc: 'A terminal‑style portfolio with interactive commands.',
-        link: 'https://abhay.bhingradia.com/terminal',
-      },
-      {
-        name: 'GitHub Profile',
-        desc: 'Explore public contributions and other projects.',
-        link: 'https://github.com/AbhayB97',
-      },
-      {
-        name: 'Portfolio OS (This Site)',
-        desc: 'Desktop‑style portfolio inspired by daedalOS with draggable windows.',
-        link: '#',
-      },
-    ];
-    container.innerHTML = `
-      <h1>Highlighted Projects</h1>
-      <div class="grid projects">
-        ${projects
-          .map(
-            (p) => `
-            <a class="card" href="${p.link}" target="_blank" rel="noreferrer">
-              <h3>${p.name}</h3>
-              <p>${p.desc}</p>
-            </a>
-          `
-          )
-          .join('')}
-      </div>
+    const root = document.createElement('div');
+    root.className = 'prose projects-hub';
+    root.innerHTML = `
+      <h1>Projects Hub</h1>
+      <p>Open flagship case studies and interactive demos that showcase Abhay&apos;s security tooling.</p>
     `;
-    return container;
+
+    const grid = document.createElement('div');
+    grid.className = 'projects-hub-grid';
+
+    showcase.forEach((item) => {
+      const card = document.createElement('button');
+      card.className = 'project-card';
+      card.setAttribute('data-id', item.id);
+      card.innerHTML = `
+        <span class="icon">${item.icon}</span>
+        <span class="copy">
+          <strong>${item.title}</strong>
+          <span>${item.description}</span>
+        </span>
+      `;
+      card.addEventListener('click', () => {
+        if (item.action.type === 'link') {
+          window.open(item.action.href, '_blank', 'noopener,noreferrer');
+        } else if (item.action.type === 'app') {
+          window.dispatchEvent(new CustomEvent('open-app', { detail: { id: item.action.appId } }));
+        }
+      });
+      grid.append(card);
+    });
+
+    root.append(grid);
+    return root;
   },
 };
 

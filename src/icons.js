@@ -22,3 +22,15 @@ export const iconTrash = base(
 );
 export const iconArrowRight = base('<path d="m12 5 7 7-7 7"/><path d="M5 12h14"/>');
 
+// Added from codex/prepare-codebase-summary-3er28m
+export const iconTerminal = base(
+  '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="m8 9 4 3-4 3"/><path d="M12 17h4"/>'
+);
+
+export const iconChart = base(
+  '<path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="10" width="3" height="6" rx="1"/><rect x="12" y="7" width="3" height="9" rx="1"/><rect x="17" y="12" width="3" height="4" rx="1"/>'
+);
+
+export const iconPalette = base(
+  '<path d="M21 15a9 9 0 1 0-9 9 4 4 0 0 1-.9-7.9 1 1 0 0 0 .79-1.07A3 3 0 0 1 14.88 12H17a4 4 0 0 1 4 4Z"/><circle cx="7.5" cy="10.5" r="1.5"/><circle cx="12" cy="7.5" r="1.5"/><circle cx="16.5" cy="10.5" r="1.5"/><circle cx="11.5" cy="16.5" r="1.5"/>'
+);
